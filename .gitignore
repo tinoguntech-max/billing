@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+billing-express/backend/node_modules/
+billing-express/frontend/node_modules/
+
+# Build output
+billing-express/frontend/dist/
+.next/
+
+# Environment files
+.env
+.env.local
+billing-express/backend/.env
+
+# WhatsApp session
+billing-express/backend/whatsapp-session/
+billing-express/backend/.wwebjs_cache/
+
+# Uploads
+billing-express/backend/uploads/foto/
+
+# Logs
+logs/
+*.log
+billing-express/logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+node_modules/
+.next/

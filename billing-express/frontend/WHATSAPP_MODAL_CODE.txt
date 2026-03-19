@@ -1,0 +1,55 @@
+// Tambahkan kode ini SEBELUM penutup </div> terakhir di file Pelanggan.jsx
+// Letakkan setelah modal "Detail Koneksi"
+
+      {/* WhatsApp Message Modal */}
+      <Modal open={waModal} onClose={() => setWaModal(false)} title="📱 Kirim Pesan WhatsApp" headerColor="bg-green-100">
+        <div className="p-6">
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+            <p className="text-sm text-green-700 font-semibold mb-1">Kirim pesan ke pelanggan</p>
+            <p className="text-xs text-green-600">Pesan akan dikirim melalui WhatsApp Gateway</p>
+          </div>
+          
+          <div>
+            <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-2">
+              Pesan
+            </label>
+            <textarea 
+              className="input-field h-40 resize-none font-sans"
+              placeholder="Ketik pesan Anda di sini..."
+              value={waMessage}
+              onChange={e => setWaMessage(e.target.value)}
+              disabled={sendingWa}
+            />
+            <p className="text-xs text-muted mt-1">
+              Gunakan *teks* untuk bold, _teks_ untuk italic
+            </p>
+          </div>
+        </div>
+        
+        <div className="px-6 pb-6 flex gap-3">
+          <button 
+            onClick={() => setWaModal(false)} 
+            className="flex-1 py-2.5 rounded-xl border border-purple-100 text-sm font-semibold text-muted hover:bg-pastel-lavender"
+            disabled={sendingWa}
+          >
+            Batal
+          </button>
+          <button 
+            onClick={sendWaMessage} 
+            className="flex-1 py-2.5 rounded-xl bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+            disabled={sendingWa}
+          >
+            {sendingWa ? (
+              <>
+                <RefreshCw size={16} className="animate-spin" />
+                Mengirim...
+              </>
+            ) : (
+              <>
+                <MessageCircle size={16} />
+                Kirim Pesan
+              </>
+            )}
+          </button>
+        </div>
+      </Modal>
