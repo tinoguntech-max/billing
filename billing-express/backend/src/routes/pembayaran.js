@@ -25,9 +25,13 @@ router.post('/', async (req, res) => {
     const { id_tagihan, jumlah, metode, tgl_bayar, keterangan } = req.body
     if (!id_tagihan || !jumlah) return res.status(400).json({ error: 'id_tagihan dan jumlah wajib diisi' })
 
+    const tglFormatted = tgl_bayar
+      ? new Date(tgl_bayar).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10)
+
     const [r] = await pool.query(
       'INSERT INTO pembayaran (id_tagihan,jumlah,metode,tgl_bayar,keterangan) VALUES (?,?,?,?,?)',
-      [id_tagihan, jumlah, metode || 'Tunai', tgl_bayar || new Date(), keterangan || '']
+      [id_tagihan, jumlah, metode || 'Tunai', tglFormatted, keterangan || '']
     )
     await pool.query("UPDATE tagihan SET status='Lunas' WHERE id=?", [id_tagihan])
     res.status(201).json({ id: r.insertId })

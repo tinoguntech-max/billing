@@ -13,6 +13,7 @@ import Pengaturan from './pages/Pengaturan'
 import MikroTik   from './pages/MikroTik'
 import Karyawan   from './pages/Karyawan'
 import Profil     from './pages/Profil'
+import Peta       from './pages/Peta'
 
 // Proteksi route berdasarkan role
 function PrivateRoute({ children, roles }) {
@@ -46,6 +47,7 @@ export default function App() {
               <Route path="/karyawan"     element={<PrivateRoute roles={['admin']}><Karyawan /></PrivateRoute>} />
               <Route path="/pengaturan"   element={<PrivateRoute roles={['admin']}><Pengaturan /></PrivateRoute>} />
               <Route path="/mikrotik"     element={<PrivateRoute roles={['admin']}><MikroTik /></PrivateRoute>} />
+              <Route path="/peta"         element={<PrivateRoute roles={['admin']}><Peta /></PrivateRoute>} />
             </Routes>
           </Shell>
         </PrivateRoute>

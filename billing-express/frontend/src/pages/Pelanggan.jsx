@@ -9,7 +9,7 @@ function Badge({ status }) {
   const map = { Aktif: 'badge badge-paid', Nonaktif: 'badge badge-inactive', Trial: 'badge badge-trial' }
   return <span className={map[status] ?? 'badge badge-active'}>{status}</span>
 }
-const emptyForm = { nama: '', email: '', telepon: '', alamat: '', ip_address: '', id_paket: '', status: 'Aktif', tgl_bergabung: '' }
+const emptyForm = { nama: '', email: '', telepon: '', alamat: '', ip_address: '', id_paket: '', status: 'Aktif', tgl_bergabung: '', latitude: '', longitude: '' }
 
 export default function Pelanggan() {
   const [data, setData]       = useState([])
@@ -73,7 +73,8 @@ export default function Pelanggan() {
   const openEdit = p => {
     setForm({ nama: p.nama, email: p.email || '', telepon: p.telepon, alamat: p.alamat || '',
       ip_address: p.ip_address || '', id_paket: String(p.id_paket || ''), status: p.status,
-      tgl_bergabung: String(p.tgl_bergabung || '').slice(0, 10) })
+      tgl_bergabung: String(p.tgl_bergabung || '').slice(0, 10),
+      latitude: p.latitude || '', longitude: p.longitude || '' })
     setEditId(p.id); setModal(true)
   }
   const save = async () => {
@@ -519,6 +520,17 @@ export default function Pelanggan() {
               <input className="input-field" type="date" value={form.tgl_bergabung} onChange={e => setForm({ ...form, tgl_bergabung: e.target.value })} />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Latitude</label>
+              <input className="input-field" type="number" step="any" placeholder="-7.12345678" value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Longitude</label>
+              <input className="input-field" type="number" step="any" placeholder="110.12345678" value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} />
+            </div>
+          </div>
+          <p className="text-xs text-muted">💡 Cara dapat koordinat: buka Google Maps → klik kanan lokasi → copy angka pertama (lat) dan kedua (lng)</p>
         </div>
         <div className="px-6 pb-6 flex gap-3">
           <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-xl border border-purple-100 text-sm font-semibold text-muted hover:bg-pastel-lavender">Batal</button>
