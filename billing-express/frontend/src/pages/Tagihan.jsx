@@ -148,14 +148,14 @@ export default function Tagihan() {
           <div className="text-xs text-muted mt-1">Sudah Lunas</div>
         </div>
         <div className="bg-pastel-pink rounded-2xl p-4 text-center border border-pink-100">
-          <div className="text-2xl font-bold text-accent-pink">{(summary['Belum Bayar']?.count ?? 0) + (summary['Terlambat']?.count ?? 0)}</div>
-          <div className="text-xs font-mono text-accent-pink mt-0.5">{fmt((summary['Belum Bayar']?.nominal ?? 0) + (summary['Terlambat']?.nominal ?? 0))}</div>
+          <div className="text-2xl font-bold text-accent-pink">{(summary['Belum Bayar']?.count ?? 0)}</div>
+          <div className="text-xs font-mono text-accent-pink mt-0.5">{fmt(summary['Belum Bayar']?.nominal ?? 0)}</div>
           <div className="text-xs text-muted mt-1">Belum Bayar</div>
         </div>
-        <div className="bg-pastel-yellow rounded-2xl p-4 text-center border border-yellow-100">
-          <div className="text-2xl font-bold text-accent-yellow">{Object.values(summary).reduce((s, x) => s + (x.count ?? 0), 0)}</div>
-          <div className="text-xs font-mono text-accent-yellow mt-0.5">{fmt(Object.values(summary).reduce((s, x) => s + (x.nominal ?? 0), 0))}</div>
-          <div className="text-xs text-muted mt-1">Total Tagihan</div>
+        <div className="bg-red-50 rounded-2xl p-4 text-center border border-red-100">
+          <div className="text-2xl font-bold text-red-500">{summary['Terlambat']?.count ?? 0}</div>
+          <div className="text-xs font-mono text-red-400 mt-0.5">{fmt(summary['Terlambat']?.nominal ?? 0)}</div>
+          <div className="text-xs text-muted mt-1">Terlambat</div>
         </div>
       </div>
 
