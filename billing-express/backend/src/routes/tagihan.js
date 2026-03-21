@@ -3,25 +3,35 @@ const pool   = require('../db')
 
 router.get('/', async (req, res) => {
   try {
-    const { status = '', id_pelanggan = '', page = 1, limit = 50 } = req.query
+    const { status = '', id_pelanggan = '', search = '', sortBy = 'created_at', sortOrder = 'desc', page = 1, limit = 10 } = req.query
     const pg  = Math.max(1, Number(page))
     const lim = Math.min(100, Number(limit))
     const off = (pg - 1) * lim
+
+    const allowedSort = { created_at: 't.created_at', no_tagihan: 't.no_tagihan', nama_pelanggan: 'p.nama', jumlah: 't.jumlah', tgl_jatuh_tempo: 't.tgl_jatuh_tempo', status: 't.status', periode: 't.periode' }
+    const orderCol = allowedSort[sortBy] || 't.created_at'
+    const orderDir = sortOrder === 'asc' ? 'ASC' : 'DESC'
 
     let where = 'WHERE 1=1'
     const params = []
     if (status)       { where += ' AND t.status=?';        params.push(status) }
     if (id_pelanggan) { where += ' AND t.id_pelanggan=?';  params.push(id_pelanggan) }
+    if (search)       { where += ' AND (p.nama LIKE ? OR t.no_tagihan LIKE ?)'; params.push(`%${search}%`, `%${search}%`) }
 
-    const [[{ total }], [rows]] = await Promise.all([
-      pool.query(`SELECT COUNT(*) AS total FROM tagihan t ${where}`, params),
+    const [[{ total }], [rows], [summary]] = await Promise.all([
+      pool.query(`SELECT COUNT(*) AS total FROM tagihan t JOIN pelanggan p ON t.id_pelanggan=p.id ${where}`, params),
       pool.query(`SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket, pk.kecepatan
                   FROM tagihan t
                   JOIN pelanggan p ON t.id_pelanggan=p.id
                   LEFT JOIN paket pk ON p.id_paket=pk.id
-                  ${where} ORDER BY t.created_at DESC LIMIT ? OFFSET ?`, [...params, lim, off]),
+                  ${where} ORDER BY ${orderCol} ${orderDir} LIMIT ? OFFSET ?`, [...params, lim, off]),
+      pool.query(`SELECT t.status, COUNT(*) AS count, COALESCE(SUM(t.jumlah),0) AS nominal
+                  FROM tagihan t JOIN pelanggan p ON t.id_pelanggan=p.id
+                  ${where} GROUP BY t.status`, params),
     ])
-    res.json({ data: rows, total, page: pg, limit: lim })
+    const summaryMap = {}
+    summary.forEach(s => { summaryMap[s.status] = { count: Number(s.count), nominal: Number(s.nominal) } })
+    res.json({ data: rows, total, page: pg, limit: lim, summary: summaryMap })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 

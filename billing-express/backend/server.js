@@ -27,6 +27,7 @@ app.use('/api/tagihan',    require('./src/routes/tagihan'))
 app.use('/api/pembayaran', require('./src/routes/pembayaran'))
 app.use('/api/pengaturan',  require('./src/routes/pengaturan'))
 app.use('/api/pengeluaran', require('./src/routes/pengeluaran'))
+app.use('/api/pemasukan',  require('./src/routes/pemasukan'))
 app.use('/api/mikrotik',   require('./src/routes/mikrotik'))
 app.use('/api/whatsapp',   require('./src/routes/whatsapp'))
 

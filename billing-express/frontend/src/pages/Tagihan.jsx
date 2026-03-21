@@ -2,7 +2,7 @@
 import { apiFetch } from '../lib/api'
 import Modal from '../components/Modal'
 import Toast from '../components/Toast'
-import { Plus, CheckCircle, Zap } from 'lucide-react'
+import { Plus, CheckCircle, Zap, Search, ChevronUp, ChevronDown } from 'lucide-react'
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
 function Badge({ status }) {
@@ -19,22 +19,51 @@ export default function Tagihan() {
   const [form, setForm]           = useState({ ...emptyForm })
   const [toast, setToast]         = useState(null)
   const [generating, setGenerating] = useState(false)
+  const [summary, setSummary]     = useState({})
+
+  const [search, setSearch]         = useState('')
+  const [filterStatus, setFilterStatus] = useState('')
+  const [sortBy, setSortBy]         = useState('created_at')
+  const [sortOrder, setSortOrder]   = useState('desc')
+  const [page, setPage]             = useState(1)
+  const [limit, setLimit]           = useState(10)
+  const [total, setTotal]           = useState(0)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const r    = await apiFetch('/api/tagihan')
+    const q = new URLSearchParams()
+    if (search)       q.set('search', search)
+    if (filterStatus) q.set('status', filterStatus)
+    q.set('sortBy', sortBy)
+    q.set('sortOrder', sortOrder)
+    q.set('page', page)
+    q.set('limit', limit)
+    const r    = await apiFetch('/api/tagihan?' + q)
     const json = await r.json()
-    setData(json.data ?? []); setLoading(false)
-  }, [])
+    setData(json.data ?? [])
+    setTotal(json.total ?? 0)
+    setSummary(json.summary ?? {})
+    setLoading(false)
+  }, [search, filterStatus, sortBy, sortOrder, page, limit])
 
   useEffect(() => { load() }, [load])
   useEffect(() => {
-    apiFetch('/api/pelanggan?limit=100').then(r => r.json()).then(j => setPelanggan(j.data ?? []))
-    const now  = new Date()
+    apiFetch('/api/pelanggan?limit=500').then(r => r.json()).then(j => setPelanggan(j.data ?? []))
+    const now   = new Date()
     const bulan = now.toLocaleString('id-ID', { month: 'long', year: 'numeric' })
     const jatuh = new Date(now.getFullYear(), now.getMonth(), 20).toISOString().slice(0, 10)
     setForm(f => ({ ...f, periode: bulan, tgl_jatuh_tempo: jatuh }))
   }, [])
+
+  const handleSort = col => {
+    if (sortBy === col) setSortOrder(o => o === 'asc' ? 'desc' : 'asc')
+    else { setSortBy(col); setSortOrder('asc') }
+    setPage(1)
+  }
+  const SortIcon = ({ col }) => {
+    if (sortBy !== col) return <ChevronUp size={13} className="opacity-30" />
+    return sortOrder === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />
+  }
 
   const generateOtomatis = async () => {
     setGenerating(true)
@@ -72,8 +101,7 @@ export default function Tagihan() {
     if (r.ok) load()
   }
 
-  const lunas = data.filter(t => t.status === 'Lunas').length
-  const belum = data.filter(t => t.status !== 'Lunas').length
+  const totalPages = Math.max(1, Math.ceil(total / limit))
 
   return (
     <div>
@@ -84,8 +112,7 @@ export default function Tagihan() {
           <p className="text-muted text-sm mt-1">Buat dan kelola tagihan pelanggan</p>
         </div>
         <div className="flex gap-3 flex-wrap">
-          <button onClick={generateOtomatis} disabled={generating}
-            className="btn-blue w-fit disabled:opacity-50">
+          <button onClick={generateOtomatis} disabled={generating} className="btn-blue w-fit disabled:opacity-50">
             <Zap size={16} /> {generating ? 'Memproses...' : 'Generate Otomatis'}
           </button>
           <button onClick={() => setModal(true)} className="btn-primary w-fit"><Plus size={16} /> Buat Tagihan</button>
@@ -94,17 +121,35 @@ export default function Tagihan() {
 
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div className="bg-pastel-mint rounded-2xl p-4 text-center border border-green-100">
-          <div className="text-2xl font-bold text-accent-mint">{lunas}</div>
+          <div className="text-2xl font-bold text-accent-mint">{summary['Lunas']?.count ?? 0}</div>
+          <div className="text-xs font-mono text-accent-mint mt-0.5">{fmt(summary['Lunas']?.nominal ?? 0)}</div>
           <div className="text-xs text-muted mt-1">Sudah Lunas</div>
         </div>
         <div className="bg-pastel-pink rounded-2xl p-4 text-center border border-pink-100">
-          <div className="text-2xl font-bold text-accent-pink">{belum}</div>
+          <div className="text-2xl font-bold text-accent-pink">{(summary['Belum Bayar']?.count ?? 0) + (summary['Terlambat']?.count ?? 0)}</div>
+          <div className="text-xs font-mono text-accent-pink mt-0.5">{fmt((summary['Belum Bayar']?.nominal ?? 0) + (summary['Terlambat']?.nominal ?? 0))}</div>
           <div className="text-xs text-muted mt-1">Belum Bayar</div>
         </div>
         <div className="bg-pastel-yellow rounded-2xl p-4 text-center border border-yellow-100">
-          <div className="text-2xl font-bold text-accent-yellow">{data.length}</div>
+          <div className="text-2xl font-bold text-accent-yellow">{Object.values(summary).reduce((s, x) => s + (x.count ?? 0), 0)}</div>
+          <div className="text-xs font-mono text-accent-yellow mt-0.5">{fmt(Object.values(summary).reduce((s, x) => s + (x.nominal ?? 0), 0))}</div>
           <div className="text-xs text-muted mt-1">Total Tagihan</div>
         </div>
+      </div>
+
+      {/* Filter Bar */}
+      <div className="card p-4 mb-4 flex flex-wrap gap-3">
+        <div className="relative flex-1 min-w-48">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input className="input-field pl-9" placeholder="Cari nama pelanggan / no. tagihan..."
+            value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
+        </div>
+        <select className="input-field w-auto" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1) }}>
+          <option value="">Semua Status</option>
+          <option>Belum Bayar</option>
+          <option>Lunas</option>
+          <option>Terlambat</option>
+        </select>
       </div>
 
       <div className="card overflow-hidden">
@@ -112,9 +157,26 @@ export default function Tagihan() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-pastel-lavender">
-                <th className="th">No. Tagihan</th><th className="th">Pelanggan</th><th className="th">Paket</th>
-                <th className="th">Periode</th><th className="th">Jumlah</th><th className="th">Jatuh Tempo</th>
-                <th className="th">Status</th><th className="th">Aksi</th>
+                <th className="th cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => handleSort('no_tagihan')}>
+                  <div className="flex items-center gap-1">No. Tagihan <SortIcon col="no_tagihan" /></div>
+                </th>
+                <th className="th cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => handleSort('nama_pelanggan')}>
+                  <div className="flex items-center gap-1">Pelanggan <SortIcon col="nama_pelanggan" /></div>
+                </th>
+                <th className="th">Paket</th>
+                <th className="th cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => handleSort('periode')}>
+                  <div className="flex items-center gap-1">Periode <SortIcon col="periode" /></div>
+                </th>
+                <th className="th cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => handleSort('jumlah')}>
+                  <div className="flex items-center gap-1">Jumlah <SortIcon col="jumlah" /></div>
+                </th>
+                <th className="th cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => handleSort('tgl_jatuh_tempo')}>
+                  <div className="flex items-center gap-1">Jatuh Tempo <SortIcon col="tgl_jatuh_tempo" /></div>
+                </th>
+                <th className="th cursor-pointer hover:bg-purple-100 transition-colors" onClick={() => handleSort('status')}>
+                  <div className="flex items-center gap-1">Status <SortIcon col="status" /></div>
+                </th>
+                <th className="th">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -142,9 +204,54 @@ export default function Tagihan() {
                   </td>
                 </tr>
               ))}
-              {!loading && !data.length && <tr><td colSpan={8} className="td text-center text-muted py-10">Belum ada tagihan</td></tr>}
+              {!loading && !data.length && <tr><td colSpan={8} className="td text-center text-muted py-10">Tidak ada tagihan ditemukan</td></tr>}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="px-5 py-3 border-t border-purple-50 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted">
+              {total === 0 ? '0 data' : `${((page - 1) * limit) + 1}–${Math.min(page * limit, total)} dari ${total} data`}
+            </span>
+            <select className="input-field w-auto text-sm py-1.5" value={limit} onChange={e => { setLimit(Number(e.target.value)); setPage(1) }}>
+              <option value={10}>10 / hal</option>
+              <option value={25}>25 / hal</option>
+              <option value={50}>50 / hal</option>
+              <option value={100}>100 / hal</option>
+            </select>
+          </div>
+          <div className="flex gap-2 items-center">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              className="px-3 py-1.5 rounded-lg border border-purple-200 text-sm font-semibold text-dark hover:bg-pastel-lavender disabled:opacity-50 disabled:cursor-not-allowed">
+              ← Prev
+            </button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const p = i + 1
+                return (
+                  <button key={p} onClick={() => setPage(p)}
+                    className={`w-8 h-8 rounded-lg text-sm font-semibold ${page === p ? 'bg-accent-purple text-white' : 'border border-purple-200 text-dark hover:bg-pastel-lavender'}`}>
+                    {p}
+                  </button>
+                )
+              })}
+              {totalPages > 5 && (
+                <>
+                  <span className="text-muted px-1">...</span>
+                  <button onClick={() => setPage(totalPages)}
+                    className="w-8 h-8 rounded-lg text-sm font-semibold border border-purple-200 text-dark hover:bg-pastel-lavender">
+                    {totalPages}
+                  </button>
+                </>
+              )}
+            </div>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+              className="px-3 py-1.5 rounded-lg border border-purple-200 text-sm font-semibold text-dark hover:bg-pastel-lavender disabled:opacity-50 disabled:cursor-not-allowed">
+              Next →
+            </button>
+          </div>
         </div>
       </div>
 
@@ -182,7 +289,3 @@ export default function Tagihan() {
     </div>
   )
 }
-
-
-
-

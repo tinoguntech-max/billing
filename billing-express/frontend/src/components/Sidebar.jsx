@@ -3,7 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   LayoutDashboard, Users, FileText, Package, CreditCard,
-  BarChart2, Settings, X, TrendingDown, UserCog, LogOut, ChevronDown, Wifi, Map
+  BarChart2, Settings, X, TrendingDown, TrendingUp, UserCog, LogOut, ChevronDown, Wifi, Map
 } from 'lucide-react'
 
 // Definisi nav per role
@@ -15,6 +15,7 @@ const NAV = {
       { to: '/tagihan',     label: 'Tagihan',          icon: FileText },
       { to: '/paket',       label: 'Paket Internet',   icon: Package },
       { to: '/pembayaran',  label: 'Pembayaran',       icon: CreditCard },
+      { to: '/pemasukan',   label: 'Pemasukan',        icon: TrendingUp },
       { to: '/pengeluaran', label: 'Pengeluaran',      icon: TrendingDown },
       { to: '/peta',        label: 'Peta Pelanggan',   icon: Map },
     ],
@@ -30,6 +31,7 @@ const NAV = {
       { to: '/',            label: 'Dashboard',        icon: LayoutDashboard },
       { to: '/tagihan',     label: 'Tagihan',          icon: FileText },
       { to: '/pembayaran',  label: 'Pembayaran',       icon: CreditCard },
+      { to: '/pemasukan',   label: 'Pemasukan',        icon: TrendingUp },
       { to: '/pengeluaran', label: 'Pengeluaran',      icon: TrendingDown },
     ],
     report: [

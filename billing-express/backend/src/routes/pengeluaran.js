@@ -3,9 +3,10 @@ const pool   = require('../db')
 
 router.get('/saldo', async (req, res) => {
   try {
-    const [[masuk]]  = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pembayaran')
-    const [[keluar]] = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pengeluaran')
-    res.json({ saldo: Number(masuk.total) - Number(keluar.total) })
+    const [[masuk]]     = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pembayaran')
+    const [[masukLain]] = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pemasukan')
+    const [[keluar]]    = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pengeluaran')
+    res.json({ saldo: Number(masuk.total) + Number(masukLain.total) - Number(keluar.total) })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
@@ -21,9 +22,9 @@ router.get('/', async (req, res) => {
     if (tahun)    { where += ' AND YEAR(tgl_pengeluaran)=?';  params.push(tahun) }
     if (kategori) { where += ' AND kategori=?';               params.push(kategori) }
     const [[{ total }], [rows], [summary]] = await Promise.all([
-      pool.query(`SELECT COUNT(*) AS total FROM pengeluaran ${where}`, params),
-      pool.query(`SELECT * FROM pengeluaran ${where} ORDER BY tgl_pengeluaran DESC LIMIT ? OFFSET ?`, [...params, lim, off]),
-      pool.query(`SELECT kategori, SUM(jumlah) AS total FROM pengeluaran ${where} GROUP BY kategori`, params),
+      pool.query('SELECT COUNT(*) AS total FROM pengeluaran ' + where, params),
+      pool.query('SELECT * FROM pengeluaran ' + where + ' ORDER BY tgl_pengeluaran DESC LIMIT ? OFFSET ?', [...params, lim, off]),
+      pool.query('SELECT kategori, SUM(jumlah) AS total FROM pengeluaran ' + where + ' GROUP BY kategori', params),
     ])
     res.json({ data: rows, total, page: pg, limit: lim, summary })
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -34,9 +35,10 @@ router.post('/', async (req, res) => {
     const { kategori, jumlah, tgl_pengeluaran, keterangan, id_karyawan } = req.body
     if (!kategori || !jumlah || !tgl_pengeluaran)
       return res.status(400).json({ error: 'Kategori, jumlah, dan tanggal wajib diisi' })
-    const [[masuk]]  = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pembayaran')
-    const [[keluar]] = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pengeluaran')
-    const saldo = Number(masuk.total) - Number(keluar.total)
+    const [[masuk]]     = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pembayaran')
+    const [[masukLain]] = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pemasukan')
+    const [[keluar]]    = await pool.query('SELECT COALESCE(SUM(jumlah),0) AS total FROM pengeluaran')
+    const saldo = Number(masuk.total) + Number(masukLain.total) - Number(keluar.total)
     if (Number(jumlah) > saldo)
       return res.status(400).json({ error: 'Saldo tidak cukup' })
     const [r] = await pool.query(
