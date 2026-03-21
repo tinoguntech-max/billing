@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
     if (id_pelanggan) { where += ' AND t.id_pelanggan=?';  params.push(id_pelanggan) }
     if (search)       { where += ' AND (p.nama LIKE ? OR t.no_tagihan LIKE ?)'; params.push(`%${search}%`, `%${search}%`) }
 
-    const [[{ total }], [rows], [summary]] = await Promise.all([
+    const [[countRows], [rows], [summaryRows]] = await Promise.all([
       pool.query(`SELECT COUNT(*) AS total FROM tagihan t JOIN pelanggan p ON t.id_pelanggan=p.id ${where}`, params),
       pool.query(`SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket, pk.kecepatan
                   FROM tagihan t
@@ -29,9 +29,10 @@ router.get('/', async (req, res) => {
                   FROM tagihan t JOIN pelanggan p ON t.id_pelanggan=p.id
                   ${where} GROUP BY t.status`, params),
     ])
+    const totalCount = Number(countRows[0].total)
     const summaryMap = {}
-    summary.forEach(s => { summaryMap[s.status] = { count: Number(s.count), nominal: Number(s.nominal) } })
-    res.json({ data: rows, total, page: pg, limit: lim, summary: summaryMap })
+    summaryRows.forEach(s => { summaryMap[s.status] = { count: Number(s.count), nominal: Number(s.nominal) } })
+    res.json({ data: rows, total: totalCount, page: pg, limit: lim, summary: summaryMap })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
