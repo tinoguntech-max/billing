@@ -5,6 +5,28 @@ import Toast from '../components/Toast'
 import { Plus, CheckCircle, Zap, Search, ChevronUp, ChevronDown } from 'lucide-react'
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+
+function JatuhTempo({ tgl, status }) {
+  if (!tgl) return <span className="text-xs text-muted">-</span>
+  const today = new Date(); today.setHours(0,0,0,0)
+  const due   = new Date(tgl); due.setHours(0,0,0,0)
+  const diff  = Math.ceil((due - today) / (1000 * 60 * 60 * 24))
+  const isPaid = status === 'Lunas'
+  const dateStr = String(tgl).slice(0, 10)
+
+  if (isPaid) return <span className="text-xs text-muted font-mono">{dateStr}</span>
+  if (diff < 0)  return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 bg-red-50 px-2 py-0.5 rounded-lg">
+      ⚠ {dateStr} <span className="text-red-400">({Math.abs(diff)}h)</span>
+    </span>
+  )
+  if (diff <= 3) return (
+    <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-lg">
+      ⏰ {dateStr} <span className="text-amber-400">(H-{diff})</span>
+    </span>
+  )
+  return <span className="text-xs text-muted font-mono">{dateStr}</span>
+}
 function Badge({ status }) {
   const map = { Lunas: 'badge badge-paid', 'Belum Bayar': 'badge badge-unpaid', Terlambat: 'badge badge-unpaid' }
   return <span className={map[status] ?? 'badge badge-active'}>{status}</span>
@@ -191,7 +213,7 @@ export default function Tagihan() {
                   <td className="td text-xs text-muted">{t.nama_paket || '-'}</td>
                   <td className="td text-xs text-muted">{t.periode}</td>
                   <td className="td font-mono font-semibold">{fmt(t.jumlah)}</td>
-                  <td className="td text-xs text-muted">{String(t.tgl_jatuh_tempo || '').slice(0, 10)}</td>
+                  <td className="td"><JatuhTempo tgl={t.tgl_jatuh_tempo} status={t.status} /></td>
                   <td className="td"><Badge status={t.status} /></td>
                   <td className="td">
                     {t.status !== 'Lunas'
