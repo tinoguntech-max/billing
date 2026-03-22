@@ -3,18 +3,29 @@ const pool   = require('../db')
 
 router.get('/', async (req, res) => {
   try {
-    const { page = 1, limit = 50 } = req.query
+    const { page = 1, limit = 10, search = '', sortBy = 'created_at', sortOrder = 'desc', metode = '' } = req.query
     const pg  = Math.max(1, Number(page))
     const lim = Math.min(100, Number(limit))
     const off = (pg - 1) * lim
 
+    const allowedSort = { created_at: 'py.created_at', tgl_bayar: 'py.tgl_bayar', jumlah: 'py.jumlah', nama_pelanggan: 'p.nama', metode: 'py.metode', no_tagihan: 't.no_tagihan' }
+    const orderCol = allowedSort[sortBy] || 'py.created_at'
+    const orderDir = sortOrder === 'asc' ? 'ASC' : 'DESC'
+
+    let where = 'WHERE 1=1'
+    const params = []
+    if (search) { where += ' AND (p.nama LIKE ? OR t.no_tagihan LIKE ?)'; params.push(`%${search}%`, `%${search}%`) }
+    if (metode) { where += ' AND py.metode=?'; params.push(metode) }
+
     const [[{ total }], [rows]] = await Promise.all([
-      pool.query('SELECT COUNT(*) AS total FROM pembayaran'),
+      pool.query(`SELECT COUNT(*) AS total FROM pembayaran py
+                  JOIN tagihan t ON py.id_tagihan=t.id
+                  JOIN pelanggan p ON t.id_pelanggan=p.id ${where}`, params),
       pool.query(`SELECT py.*, t.no_tagihan, t.jumlah AS jumlah_tagihan, p.nama AS nama_pelanggan
                   FROM pembayaran py
                   JOIN tagihan t ON py.id_tagihan=t.id
                   JOIN pelanggan p ON t.id_pelanggan=p.id
-                  ORDER BY py.created_at DESC LIMIT ? OFFSET ?`, [lim, off]),
+                  ${where} ORDER BY ${orderCol} ${orderDir} LIMIT ? OFFSET ?`, [...params, lim, off]),
     ])
     res.json({ data: rows, total, page: pg, limit: lim })
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -76,6 +87,18 @@ _${config?.nama_isp || 'TamNet Internet Provider'}_`
     }
 
     res.status(201).json({ id: r.insertId })
+  } catch (e) { res.status(500).json({ error: e.message }) }
+})
+
+router.delete('/:id', async (req, res) => {
+  try {
+    // Ambil id_tagihan dulu sebelum hapus
+    const [[py]] = await pool.query('SELECT id_tagihan FROM pembayaran WHERE id=?', [req.params.id])
+    if (!py) return res.status(404).json({ error: 'Pembayaran tidak ditemukan' })
+    await pool.query('DELETE FROM pembayaran WHERE id=?', [req.params.id])
+    // Kembalikan status tagihan ke Belum Bayar
+    await pool.query("UPDATE tagihan SET status='Belum Bayar' WHERE id=?", [py.id_tagihan])
+    res.json({ message: 'Pembayaran dihapus' })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
