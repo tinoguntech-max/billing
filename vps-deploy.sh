@@ -5,7 +5,7 @@ echo "========================================"
 echo "  DEPLOY KE VPS"
 echo "========================================"
 
-PROJECT_DIR="/var/www/billing-internet"  # Sesuaikan path di VPS
+PROJECT_DIR="/var/www/billing-internet"
 BACKEND_DIR="$PROJECT_DIR/billing-express/backend"
 
 cd $PROJECT_DIR
