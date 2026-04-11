@@ -1,9 +1,9 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import Shell from '@/components/Shell'
 import Modal from '@/components/Modal'
 import Toast from '@/components/Toast'
-import { Plus, Edit2, Trash2, Search } from 'lucide-react'
+import { Plus, Edit2, Trash2, Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react'
 
 function Badge({ status }: { status: string }) {
   const map: Record<string,string> = {
@@ -12,38 +12,81 @@ function Badge({ status }: { status: string }) {
   return <span className={map[status]||'badge badge-active'}>{status}</span>
 }
 
+type SortKey = 'id'|'nama'|'telepon'|'nama_paket'|'ip_address'|'tgl_bergabung'|'status'
+type SortDir = 'asc'|'desc'
+
+function SortIcon({ col, sortKey, sortDir }: { col: SortKey, sortKey: SortKey, sortDir: SortDir }) {
+  if (col !== sortKey) return <ChevronsUpDown size={13} className="inline ml-1 opacity-30"/>
+  return sortDir === 'asc'
+    ? <ChevronUp size={13} className="inline ml-1 text-accent-purple"/>
+    : <ChevronDown size={13} className="inline ml-1 text-accent-purple"/>
+}
+
 const emptyForm = { nama:'', email:'', telepon:'', alamat:'', ip_address:'', id_paket:'', status:'Aktif', tgl_bergabung:'' }
+const PAGE_SIZES = [10, 25, 50, 100]
 
 export default function PelangganPage() {
-  const [data,    setData]    = useState<any[]>([])
-  const [paket,   setPaket]   = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search,  setSearch]  = useState('')
+  const [data,         setData]         = useState<any[]>([])
+  const [paket,        setPaket]        = useState<any[]>([])
+  const [loading,      setLoading]      = useState(true)
+  const [search,       setSearch]       = useState('')
   const [filterStatus, setFilterStatus] = useState('')
-  const [modal,   setModal]   = useState(false)
-  const [editId,  setEditId]  = useState<number|null>(null)
-  const [form,    setForm]    = useState({ ...emptyForm })
-  const [toast,   setToast]   = useState<{msg:string,type:'success'|'error'}|null>(null)
+  const [modal,        setModal]        = useState(false)
+  const [editId,       setEditId]       = useState<number|null>(null)
+  const [form,         setForm]         = useState({ ...emptyForm })
+  const [toast,        setToast]        = useState<{msg:string,type:'success'|'error'}|null>(null)
+
+  // Sort & Pagination
+  const [sortKey,  setSortKey]  = useState<SortKey>('id')
+  const [sortDir,  setSortDir]  = useState<SortDir>('desc')
+  const [page,     setPage]     = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const q = new URLSearchParams()
-    if (search)       q.set('search', search)
-    if (filterStatus) q.set('status', filterStatus)
-    const r = await fetch('/api/pelanggan?' + q.toString())
+    const r = await fetch('/api/pelanggan?limit=1000')
     const json = await r.json()
     setData(Array.isArray(json) ? json : (json.data ?? []))
     setLoading(false)
-  }, [search, filterStatus])
+  }, [])
 
   useEffect(() => { load() }, [load])
   useEffect(() => { fetch('/api/paket').then(r=>r.json()).then(setPaket) }, [])
 
+  const handleSort = (key: SortKey) => {
+    if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortKey(key); setSortDir('asc') }
+    setPage(1)
+  }
+
+  const sorted = useMemo(() => {
+    const q = search.toLowerCase()
+    return [...data]
+      .filter(p => {
+        const matchSearch = !q || p.nama?.toLowerCase().includes(q) || p.telepon?.includes(q) || p.email?.toLowerCase().includes(q)
+        const matchStatus = !filterStatus || p.status === filterStatus
+        return matchSearch && matchStatus
+      })
+      .sort((a, b) => {
+      let av = a[sortKey] ?? '', bv = b[sortKey] ?? ''
+      if (sortKey === 'id') { av = Number(av); bv = Number(bv) }
+      else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase() }
+      if (av < bv) return sortDir === 'asc' ? -1 : 1
+      if (av > bv) return sortDir === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [data, search, filterStatus, sortKey, sortDir])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize))
+  const paginated  = sorted.slice((page - 1) * pageSize, page * pageSize)
+
   const openAdd  = () => { setForm({ ...emptyForm, tgl_bergabung: new Date().toISOString().slice(0,10) }); setEditId(null); setModal(true) }
   const openEdit = (p: any) => {
+    let tgl = ''
+    if (p.tgl_bergabung) tgl = String(p.tgl_bergabung).slice(0, 10)
     setForm({ nama:p.nama, email:p.email||'', telepon:p.telepon, alamat:p.alamat||'',
       ip_address:p.ip_address||'', id_paket:String(p.id_paket||''), status:p.status,
-      tgl_bergabung: String(p.tgl_bergabung||'').slice(0,10) })
+      tgl_bergabung: tgl })
     setEditId(p.id); setModal(true)
   }
 
@@ -64,6 +107,23 @@ export default function PelangganPage() {
     if (r.ok) { setToast({ msg:'Pelanggan dihapus', type:'success' }); load() }
   }
 
+  const aktif    = data.filter(p => p.status === 'Aktif').length
+  const trial    = data.filter(p => p.status === 'Trial').length
+  const nonaktif = data.filter(p => p.status === 'Nonaktif').length
+
+  // Hitung distribusi paket
+  const paketCount = data.reduce<Record<string, number>>((acc, p) => {
+    const nama = p.nama_paket || 'Tanpa Paket'
+    acc[nama] = (acc[nama] || 0) + 1
+    return acc
+  }, {})
+  const topPaket = Object.entries(paketCount).sort((a, b) => b[1] - a[1])
+
+  const thProps = (key: SortKey) => ({
+    className: 'th cursor-pointer select-none hover:bg-purple-100 transition-colors',
+    onClick: () => handleSort(key)
+  })
+
   return (
     <Shell>
       {toast && <Toast message={toast.msg} type={toast.type} onClose={()=>setToast(null)} />}
@@ -78,14 +138,48 @@ export default function PelangganPage() {
         </button>
       </div>
 
-      {/* Filter */}
+      {/* Summary Cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
+        <div className="bg-pastel-mint rounded-2xl p-4 text-center border border-green-100">
+          <div className="text-2xl font-bold text-accent-mint">{aktif}</div>
+          <div className="text-xs text-muted mt-1">Pelanggan Aktif</div>
+        </div>
+        <div className="bg-pastel-yellow rounded-2xl p-4 text-center border border-yellow-100">
+          <div className="text-2xl font-bold text-accent-yellow">{trial}</div>
+          <div className="text-xs text-muted mt-1">Trial</div>
+        </div>
+        <div className="bg-pastel-pink rounded-2xl p-4 text-center border border-pink-100">
+          <div className="text-2xl font-bold text-accent-pink">{nonaktif}</div>
+          <div className="text-xs text-muted mt-1">Nonaktif</div>
+        </div>
+        <div className="bg-pastel-lavender rounded-2xl p-4 text-center border border-purple-100">
+          <div className="text-2xl font-bold text-accent-purple">{data.length}</div>
+          <div className="text-xs text-muted mt-1">Total Pelanggan</div>
+        </div>
+      </div>
+
+      {/* Distribusi Paket */}
+      {topPaket.length > 0 && (
+        <div className="card p-4 mb-4">
+          <div className="text-xs font-semibold text-muted uppercase tracking-wider mb-3">Distribusi Paket</div>
+          <div className="flex flex-wrap gap-2">
+            {topPaket.map(([nama, count]) => (
+              <div key={nama} className="flex items-center gap-2 bg-pastel-purple rounded-xl px-3 py-2">
+                <span className="text-xs font-semibold text-accent-purple">{nama}</span>
+                <span className="text-xs bg-accent-purple text-white rounded-full px-2 py-0.5 font-bold">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="card p-4 mb-4 flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-48">
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input className="input-field pl-9" placeholder="Cari nama / nomor / email..."
-            value={search} onChange={e => setSearch(e.target.value)} />
+            value={search} onChange={e => { setSearch(e.target.value); setPage(1) }} />
         </div>
-        <select className="input-field w-auto" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <select className="input-field w-auto" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setPage(1) }}>
           <option value="">Semua Status</option>
           <option>Aktif</option><option>Nonaktif</option><option>Trial</option>
         </select>
@@ -100,9 +194,14 @@ export default function PelangganPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-pastel-lavender">
-                <th className="th">ID</th><th className="th">Pelanggan</th><th className="th">Kontak</th>
-                <th className="th">Paket</th><th className="th">IP</th><th className="th">Bergabung</th>
-                <th className="th">Status</th><th className="th">Aksi</th>
+                <th {...thProps('id')}>ID <SortIcon col="id" sortKey={sortKey} sortDir={sortDir}/></th>
+                <th {...thProps('nama')}>Pelanggan <SortIcon col="nama" sortKey={sortKey} sortDir={sortDir}/></th>
+                <th {...thProps('telepon')}>Kontak <SortIcon col="telepon" sortKey={sortKey} sortDir={sortDir}/></th>
+                <th {...thProps('nama_paket')}>Paket <SortIcon col="nama_paket" sortKey={sortKey} sortDir={sortDir}/></th>
+                <th {...thProps('ip_address')}>IP <SortIcon col="ip_address" sortKey={sortKey} sortDir={sortDir}/></th>
+                <th {...thProps('tgl_bergabung')}>Bergabung <SortIcon col="tgl_bergabung" sortKey={sortKey} sortDir={sortDir}/></th>
+                <th {...thProps('status')}>Status <SortIcon col="status" sortKey={sortKey} sortDir={sortDir}/></th>
+                <th className="th">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -114,7 +213,7 @@ export default function PelangganPage() {
                     ))}
                   </tr>
                 ))
-              ) : data.map(p => (
+              ) : paginated.map(p => (
                 <tr key={p.id} className="table-row-hover border-t border-purple-50">
                   <td className="td font-mono text-xs text-muted">#{String(p.id).padStart(3,'0')}</td>
                   <td className="td">
@@ -156,9 +255,46 @@ export default function PelangganPage() {
             </tbody>
           </table>
         </div>
-        <div className="px-5 py-3 border-t border-purple-50 text-sm text-muted">
-          Menampilkan {data.length} data
-        </div>
+
+        {/* Pagination */}
+        {!loading && data.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-4 py-3 border-t border-purple-50">
+            <div className="flex items-center gap-2 text-xs text-muted">
+              <span>Tampilkan</span>
+              <select
+                className="border border-purple-100 rounded-lg px-2 py-1 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-accent-purple"
+                value={pageSize}
+                onChange={e => { setPageSize(Number(e.target.value)); setPage(1) }}
+              >
+                {PAGE_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <span>dari {sorted.length} data{sorted.length !== data.length ? ` (total ${data.length})` : ''}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setPage(1)} disabled={page === 1}
+                className="px-2 py-1 rounded-lg text-xs border border-purple-100 disabled:opacity-40 hover:bg-pastel-lavender transition-colors">«</button>
+              <button onClick={() => setPage(p => p - 1)} disabled={page === 1}
+                className="px-2 py-1 rounded-lg text-xs border border-purple-100 disabled:opacity-40 hover:bg-pastel-lavender transition-colors">‹</button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+                .reduce<(number|'...')[]>((acc, p, i, arr) => {
+                  if (i > 0 && (p as number) - (arr[i-1] as number) > 1) acc.push('...')
+                  acc.push(p); return acc
+                }, [])
+                .map((p, i) => p === '...'
+                  ? <span key={`e${i}`} className="px-2 py-1 text-xs text-muted">…</span>
+                  : <button key={p} onClick={() => setPage(p as number)}
+                      className={`px-2.5 py-1 rounded-lg text-xs border transition-colors ${page === p ? 'bg-accent-purple text-white border-accent-purple' : 'border-purple-100 hover:bg-pastel-lavender'}`}
+                    >{p}</button>
+                )
+              }
+              <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages}
+                className="px-2 py-1 rounded-lg text-xs border border-purple-100 disabled:opacity-40 hover:bg-pastel-lavender transition-colors">›</button>
+              <button onClick={() => setPage(totalPages)} disabled={page === totalPages}
+                className="px-2 py-1 rounded-lg text-xs border border-purple-100 disabled:opacity-40 hover:bg-pastel-lavender transition-colors">»</button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modal */}

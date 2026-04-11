@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const status       = searchParams.get('status') || ''
     const id_pelanggan = searchParams.get('id_pelanggan') || ''
     const page         = Math.max(1, Number(searchParams.get('page') || 1))
-    const limit        = Math.min(100, Number(searchParams.get('limit') || 50))
+    const limit        = Math.min(1000, Number(searchParams.get('limit') || 1000))
     const offset       = (page - 1) * limit
 
     let where = 'WHERE 1=1'
@@ -21,11 +21,13 @@ export async function GET(req: NextRequest) {
         params
       ),
       pool.query(
-        `SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket, pk.kecepatan
+        `SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket, pk.kecepatan,
+                MAX(pb.tgl_bayar) AS tgl_bayar
          FROM tagihan t
          JOIN pelanggan p  ON t.id_pelanggan = p.id
          LEFT JOIN paket pk ON p.id_paket = pk.id
-         ${where} ORDER BY t.created_at DESC LIMIT ? OFFSET ?`,
+         LEFT JOIN pembayaran pb ON pb.id_tagihan = t.id
+         ${where} GROUP BY t.id ORDER BY t.created_at DESC LIMIT ? OFFSET ?`,
         [...params, limit, offset]
       ),
     ])

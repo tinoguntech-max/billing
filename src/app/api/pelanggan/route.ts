@@ -26,7 +26,15 @@ export async function GET(req: NextRequest) {
       ),
     ])
 
-    return NextResponse.json({ data: rows, total, page, limit })
+    // Format DATE columns to YYYY-MM-DD string to avoid UTC timezone shift
+    const formatted = rows.map((r: any) => ({
+      ...r,
+      tgl_bergabung: r.tgl_bergabung instanceof Date
+        ? r.tgl_bergabung.toISOString().slice(0, 10)
+        : r.tgl_bergabung,
+    }))
+
+    return NextResponse.json({ data: formatted, total, page, limit })
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
