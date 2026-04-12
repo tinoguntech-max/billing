@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
     if (id_pelanggan) { where += ' AND t.id_pelanggan=?';  params.push(id_pelanggan) }
     if (search)       { where += ' AND (p.nama LIKE ? OR t.no_tagihan LIKE ?)'; params.push(`%${search}%`, `%${search}%`) }
 
-    const [[countRows], [rows], [summaryRows], [terlambatRows]] = await Promise.all([
+    const [[countRows], [rows], [summaryRows], [terlambatRows], [bulanIniRows], [lunasBulanIniRows]] = await Promise.all([
       pool.query(`SELECT COUNT(*) AS total FROM tagihan t JOIN pelanggan p ON t.id_pelanggan=p.id ${where}`, params),
       pool.query(`SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket, pk.kecepatan
                   FROM tagihan t
@@ -35,11 +35,21 @@ router.get('/', async (req, res) => {
       pool.query(`SELECT COUNT(*) AS count, COALESCE(SUM(t.jumlah),0) AS nominal
                   FROM tagihan t JOIN pelanggan p ON t.id_pelanggan=p.id
                   WHERE t.status='Belum Bayar' AND t.tgl_jatuh_tempo < CURDATE()`),
+      pool.query(`SELECT COUNT(*) AS count, COALESCE(SUM(t.jumlah),0) AS nominal
+                  FROM tagihan t
+                  WHERE MONTH(t.created_at)=MONTH(CURDATE()) AND YEAR(t.created_at)=YEAR(CURDATE())`),
+      pool.query(`SELECT COUNT(*) AS count, COALESCE(SUM(t.jumlah),0) AS nominal
+                  FROM tagihan t
+                  JOIN pembayaran py ON py.id_tagihan = t.id
+                  WHERE t.status='Lunas'
+                    AND MONTH(py.tgl_bayar)=MONTH(CURDATE()) AND YEAR(py.tgl_bayar)=YEAR(CURDATE())`),
     ])
     const totalCount = Number(countRows[0].total)
     const summaryMap = {}
     summaryRows.forEach(s => { summaryMap[s.status] = { count: Number(s.count), nominal: Number(s.nominal) } })
     summaryMap['Terlambat'] = { count: Number(terlambatRows[0].count), nominal: Number(terlambatRows[0].nominal) }
+    summaryMap['BulanIni']       = { count: Number(bulanIniRows[0].count), nominal: Number(bulanIniRows[0].nominal) }
+    summaryMap['LunasBulanIni']  = { count: Number(lunasBulanIniRows[0].count), nominal: Number(lunasBulanIniRows[0].nominal) }
     res.json({ data: rows, total: totalCount, page: pg, limit: lim, summary: summaryMap })
   } catch (e) { res.status(500).json({ error: e.message }) }
 })

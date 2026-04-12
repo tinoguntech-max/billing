@@ -25,7 +25,7 @@ export default function Dashboard() {
   const statCards = data ? [
     { label: 'Total Pelanggan',      value: data.pelanggan.total,  icon: Users,       bg: 'bg-pastel-purple', accent: 'text-accent-purple', pct: 72 },
     { label: 'Pendapatan Bulan Ini', value: fmt(data.pendapatan),  icon: TrendingUp,  bg: 'bg-pastel-mint',   accent: 'text-accent-mint',   pct: 60 },
-    { label: 'Tagihan Belum Bayar',  value: data.tagihan.belum,    icon: AlertCircle, bg: 'bg-pastel-pink',   accent: 'text-accent-pink',   pct: 35 },
+    { label: 'Tagihan Belum Bayar',  value: data.tagihan.belum,    sub: fmt(data.tagihan.nominal_belum ?? 0), icon: AlertCircle, bg: 'bg-pastel-pink',   accent: 'text-accent-pink',   pct: 35 },
     { label: 'Saldo Kas',            value: fmt(data.saldo ?? 0),  icon: Wallet,      bg: data.saldo >= 0 ? 'bg-pastel-blue' : 'bg-pastel-pink', accent: data.saldo >= 0 ? 'text-accent-blue' : 'text-accent-pink', pct: 80 },
   ] : []
 
@@ -60,6 +60,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-2xl font-bold text-dark">{s.value}</div>
                 <div className="text-sm text-muted mt-1">{s.label}</div>
+                {s.sub && <div className="text-xs font-mono text-accent-pink mt-0.5">{s.sub}</div>}
                 <div className="progress-bar"><div className="progress-fill" style={{ width: `${s.pct}%` }} /></div>
               </div>
             ))}
@@ -193,9 +194,76 @@ export default function Dashboard() {
           </table>
         </div>
       </div>
+
+      {/* Tagihan Jatuh Tempo Hari Ini & Terlambat */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <div className="card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
+            <h3 className="font-bold text-dark flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>
+              Jatuh Tempo Hari Ini
+              {data?.tagihanHariIni?.length > 0 && (
+                <span className="text-xs bg-amber-100 text-amber-600 font-semibold px-2 py-0.5 rounded-lg">{data.tagihanHariIni.length}</span>
+              )}
+            </h3>
+            <Link to="/tagihan" className="text-xs text-accent-purple font-semibold hover:underline">Lihat Semua &rarr;</Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-amber-50">
+                <th className="th">Pelanggan</th><th className="th">Paket</th><th className="th">Jumlah</th>
+              </tr></thead>
+              <tbody>
+                {data?.tagihanHariIni?.map(t => (
+                  <tr key={t.id} className="table-row-hover border-t border-amber-50">
+                    <td className="td font-medium">{t.nama_pelanggan}</td>
+                    <td className="td text-xs text-muted">{t.nama_paket || '-'}</td>
+                    <td className="td font-mono font-semibold text-amber-600">{fmt(t.jumlah)}</td>
+                  </tr>
+                ))}
+                {!loading && !data?.tagihanHariIni?.length && (
+                  <tr><td colSpan={3} className="td text-center text-muted py-6">Tidak ada tagihan jatuh tempo hari ini</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
+            <h3 className="font-bold text-dark flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+              Tagihan Terlambat
+              {data?.tagihanTerlambat?.length > 0 && (
+                <span className="text-xs bg-red-100 text-red-600 font-semibold px-2 py-0.5 rounded-lg">{data.tagihanTerlambat.length}</span>
+              )}
+            </h3>
+            <Link to="/tagihan?status=Terlambat" className="text-xs text-accent-purple font-semibold hover:underline">Lihat Semua &rarr;</Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="bg-red-50">
+                <th className="th">Pelanggan</th><th className="th">Jumlah</th><th className="th">Terlambat</th>
+              </tr></thead>
+              <tbody>
+                {data?.tagihanTerlambat?.map(t => {
+                  const hari = Math.ceil((new Date() - new Date(t.tgl_jatuh_tempo)) / (1000*60*60*24))
+                  return (
+                    <tr key={t.id} className="table-row-hover border-t border-red-50">
+                      <td className="td font-medium">{t.nama_pelanggan}</td>
+                      <td className="td font-mono font-semibold text-red-500">{fmt(t.jumlah)}</td>
+                      <td className="td"><span className="text-xs bg-red-50 text-red-500 font-semibold px-2 py-0.5 rounded-lg">{hari} hari</span></td>
+                    </tr>
+                  )
+                })}
+                {!loading && !data?.tagihanTerlambat?.length && (
+                  <tr><td colSpan={3} className="td text-center text-muted py-6">Tidak ada tagihan terlambat</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
-
-
-

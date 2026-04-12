@@ -1,0 +1,7 @@
+tunnel: f32cd373-be36-49c9-8769-0d91d8f1dd96
+credentials-file: C:\Users\User\.cloudflared\f32cd373-be36-49c9-8769-0d91d8f1dd96.json
+
+ingress:
+  - hostname: billing.tinodev.site
+    service: http://localhost:5000
+  - service: http_status:404

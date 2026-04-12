@@ -14,9 +14,11 @@ router.get('/', async (req, res) => {
       [saldoKeluarRows],
       [pemasukanBulanIniRows],
       [totalPemasukanRows],
+      [tagihanHariIni],
+      [tagihanTerlambat],
     ] = await Promise.all([
       pool.query("SELECT COUNT(*) AS total, SUM(status='Aktif') AS aktif FROM pelanggan"),
-      pool.query("SELECT COUNT(*) AS total, SUM(status='Lunas') AS lunas, SUM(status='Belum Bayar') AS belum FROM tagihan"),
+      pool.query("SELECT COUNT(*) AS total, SUM(status='Lunas') AS lunas, SUM(status='Belum Bayar') AS belum, COALESCE(SUM(CASE WHEN status='Belum Bayar' THEN jumlah ELSE 0 END),0) AS nominal_belum FROM tagihan"),
       pool.query(`SELECT COALESCE(SUM(jumlah),0) AS bulan_ini FROM pembayaran
                   WHERE MONTH(tgl_bayar)=MONTH(NOW()) AND YEAR(tgl_bayar)=YEAR(NOW())`),
       pool.query(`SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket
@@ -51,6 +53,16 @@ router.get('/', async (req, res) => {
       pool.query(`SELECT COALESCE(SUM(jumlah),0) AS total FROM pemasukan
                   WHERE MONTH(tgl_pemasukan)=MONTH(NOW()) AND YEAR(tgl_pemasukan)=YEAR(NOW())`),
       pool.query(`SELECT COALESCE(SUM(jumlah),0) AS total FROM pemasukan`),
+      pool.query(`SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket
+                  FROM tagihan t JOIN pelanggan p ON t.id_pelanggan=p.id
+                  LEFT JOIN paket pk ON p.id_paket=pk.id
+                  WHERE t.status='Belum Bayar' AND DATE(t.tgl_jatuh_tempo)=CURDATE()
+                  ORDER BY t.tgl_jatuh_tempo ASC`),
+      pool.query(`SELECT t.*, p.nama AS nama_pelanggan, pk.nama_paket
+                  FROM tagihan t JOIN pelanggan p ON t.id_pelanggan=p.id
+                  LEFT JOIN paket pk ON p.id_paket=pk.id
+                  WHERE t.status='Belum Bayar' AND t.tgl_jatuh_tempo < CURDATE()
+                  ORDER BY t.tgl_jatuh_tempo ASC`),
     ])
 
     const saldo = Number(saldoMasukRows[0].total_masuk) + Number(totalPemasukanRows[0].total) - Number(saldoKeluarRows[0].total_keluar)
@@ -66,6 +78,8 @@ router.get('/', async (req, res) => {
       tagihanTerbaru,
       distribusiPaket,
       pendapatan6,
+      tagihanHariIni,
+      tagihanTerlambat,
     })
   } catch (e) {
     res.status(500).json({ error: e.message })

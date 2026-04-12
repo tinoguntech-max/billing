@@ -15,6 +15,7 @@ billing-express/backend/.env
 # WhatsApp session
 billing-express/backend/whatsapp-session/
 billing-express/backend/.wwebjs_cache/
+billing-express/whatsapp-session/
 
 # Uploads
 billing-express/backend/uploads/foto/

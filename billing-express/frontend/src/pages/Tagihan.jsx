@@ -141,11 +141,15 @@ export default function Tagihan() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-4">
         <div className="bg-pastel-mint rounded-2xl p-4 text-center border border-green-100">
           <div className="text-2xl font-bold text-accent-mint">{summary['Lunas']?.count ?? 0}</div>
           <div className="text-xs font-mono text-accent-mint mt-0.5">{fmt(summary['Lunas']?.nominal ?? 0)}</div>
           <div className="text-xs text-muted mt-1">Sudah Lunas</div>
+          <div className="mt-2 pt-2 border-t border-green-100">
+            <div className="text-sm font-bold text-accent-mint">{summary['LunasBulanIni']?.count ?? 0} bulan ini</div>
+            <div className="text-xs font-mono text-accent-mint">{fmt(summary['LunasBulanIni']?.nominal ?? 0)}</div>
+          </div>
         </div>
         <div className="bg-pastel-pink rounded-2xl p-4 text-center border border-pink-100">
           <div className="text-2xl font-bold text-accent-pink">{(summary['Belum Bayar']?.count ?? 0)}</div>
@@ -156,6 +160,11 @@ export default function Tagihan() {
           <div className="text-2xl font-bold text-red-500">{summary['Terlambat']?.count ?? 0}</div>
           <div className="text-xs font-mono text-red-400 mt-0.5">{fmt(summary['Terlambat']?.nominal ?? 0)}</div>
           <div className="text-xs text-muted mt-1">Terlambat</div>
+        </div>
+        <div className="bg-blue-50 rounded-2xl p-4 text-center border border-blue-100">
+          <div className="text-2xl font-bold text-blue-500">{summary['BulanIni']?.count ?? 0}</div>
+          <div className="text-xs font-mono text-blue-400 mt-0.5">{fmt(summary['BulanIni']?.nominal ?? 0)}</div>
+          <div className="text-xs text-muted mt-1">Total Tagihan Bulan Ini</div>
         </div>
       </div>
 
