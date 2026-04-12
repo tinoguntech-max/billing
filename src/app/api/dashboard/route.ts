@@ -10,6 +10,8 @@ export async function GET() {
       [tagihanTerbaru],
       [distribusiPaket],
       [pendapatan6],
+      [jatuhTempoHariIni],
+      [tagihanTerlambat],
     ]: any = await Promise.all([
       pool.query("SELECT COUNT(*) AS total, SUM(status='Aktif') AS aktif FROM pelanggan"),
       pool.query("SELECT COUNT(*) AS total, SUM(status='Lunas') AS lunas, SUM(status='Belum Bayar') AS belum FROM tagihan"),
@@ -38,6 +40,24 @@ export async function GET() {
         WHERE tgl_bayar >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
         GROUP BY bln, thn ORDER BY thn, bln
       `),
+      pool.query(`
+        SELECT t.no_tagihan, p.nama AS nama_pelanggan, pk.nama_paket, t.jumlah, t.tgl_jatuh_tempo
+        FROM tagihan t
+        JOIN pelanggan p ON t.id_pelanggan=p.id
+        LEFT JOIN paket pk ON p.id_paket=pk.id
+        WHERE t.status != 'Lunas' AND DATE(t.tgl_jatuh_tempo) = CURDATE()
+        ORDER BY t.tgl_jatuh_tempo ASC
+      `),
+      pool.query(`
+        SELECT t.no_tagihan, p.nama AS nama_pelanggan, pk.nama_paket, t.jumlah, t.tgl_jatuh_tempo,
+               DATEDIFF(CURDATE(), t.tgl_jatuh_tempo) AS hari_terlambat
+        FROM tagihan t
+        JOIN pelanggan p ON t.id_pelanggan=p.id
+        LEFT JOIN paket pk ON p.id_paket=pk.id
+        WHERE t.status != 'Lunas' AND DATE(t.tgl_jatuh_tempo) < CURDATE()
+        ORDER BY t.tgl_jatuh_tempo ASC
+        LIMIT 10
+      `),
     ])
 
     const response = {
@@ -47,6 +67,8 @@ export async function GET() {
       tagihanTerbaru: tagihanTerbaru || [],
       distribusiPaket: distribusiPaket || [],
       pendapatan6:    pendapatan6 || [],
+      jatuhTempoHariIni: jatuhTempoHariIni || [],
+      tagihanTerlambat:  tagihanTerlambat || [],
     }
 
     return NextResponse.json(response)

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Shell from '@/components/Shell'
-import { Users, CheckCircle, AlertCircle, Wifi, TrendingUp } from 'lucide-react'
+import { Users, CheckCircle, AlertCircle, Wifi, TrendingUp, Clock, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 function fmt(n: number) {
@@ -149,6 +149,78 @@ export default function DashboardPage() {
                 </div>
               )
             })}
+          </div>
+        </div>
+      </div>
+
+      {/* Jatuh Tempo & Terlambat */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        {/* Jatuh Tempo Hari Ini */}
+        <div className="card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
+            <div className="flex items-center gap-2">
+              <Clock size={15} className="text-accent-yellow"/>
+              <h3 className="font-bold text-dark">Jatuh Tempo Hari Ini</h3>
+            </div>
+            <Link href="/tagihan" className="text-xs text-accent-purple font-semibold hover:underline">Lihat Semua →</Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-pastel-yellow/40">
+                  <th className="th">Pelanggan</th>
+                  <th className="th">Paket</th>
+                  <th className="th">Jumlah</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.jatuhTempoHariIni?.length > 0 ? data.jatuhTempoHariIni.map((t: any, i: number) => (
+                  <tr key={i} className="border-t border-purple-50 table-row-hover">
+                    <td className="td font-medium">{t.nama_pelanggan}</td>
+                    <td className="td text-xs text-muted">{t.nama_paket || '—'}</td>
+                    <td className="td font-mono font-semibold">{fmt(t.jumlah)}</td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={3} className="td text-center text-muted py-6 text-xs">Tidak ada tagihan jatuh tempo hari ini</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Tagihan Terlambat */}
+        <div className="card">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-purple-50">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={15} className="text-red-500"/>
+              <h3 className="font-bold text-dark">Tagihan Terlambat</h3>
+              {data?.tagihanTerlambat?.length > 0 && (
+                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold">{data.tagihanTerlambat.length}</span>
+              )}
+            </div>
+            <Link href="/tagihan" className="text-xs text-accent-purple font-semibold hover:underline">Lihat Semua →</Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-red-50">
+                  <th className="th">Pelanggan</th>
+                  <th className="th">Jumlah</th>
+                  <th className="th">Terlambat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.tagihanTerlambat?.length > 0 ? data.tagihanTerlambat.map((t: any, i: number) => (
+                  <tr key={i} className="border-t border-purple-50 table-row-hover">
+                    <td className="td font-medium">{t.nama_pelanggan}</td>
+                    <td className="td font-mono font-semibold text-red-500">{fmt(t.jumlah)}</td>
+                    <td className="td text-xs text-red-500 font-semibold">{t.hari_terlambat} hari</td>
+                  </tr>
+                )) : (
+                  <tr><td colSpan={3} className="td text-center text-muted py-6 text-xs">Tidak ada tagihan terlambat</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
