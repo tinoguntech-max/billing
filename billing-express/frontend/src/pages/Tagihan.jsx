@@ -2,7 +2,7 @@
 import { apiFetch } from '../lib/api'
 import Modal from '../components/Modal'
 import Toast from '../components/Toast'
-import { Plus, CheckCircle, Zap, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, CheckCircle, Zap, Search, ChevronUp, ChevronDown, Edit2 } from 'lucide-react'
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
 
@@ -41,6 +41,8 @@ export default function Tagihan() {
   const [form, setForm]           = useState({ ...emptyForm })
   const [toast, setToast]         = useState(null)
   const [generating, setGenerating] = useState(false)
+  const [editModal, setEditModal]   = useState(false)
+  const [editForm, setEditForm]     = useState({ id: 0, periode: '', tgl_jatuh_tempo: '', status: '' })
   const [summary, setSummary]     = useState({})
 
   const [search, setSearch]         = useState('')
@@ -108,6 +110,21 @@ export default function Tagihan() {
     if (!r.ok) { setToast({ msg: d.error, type: 'error' }); return }
     setToast({ msg: `Tagihan ${d.no_tagihan} dibuat`, type: 'success' })
     setModal(false); load()
+  }
+
+  const openEdit = t => {
+    setEditForm({ id: t.id, periode: t.periode || '', tgl_jatuh_tempo: String(t.tgl_jatuh_tempo || '').slice(0, 10), status: t.status })
+    setEditModal(true)
+  }
+
+  const saveEdit = async () => {
+    const r = await apiFetch(`/api/tagihan/${editForm.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: editForm.status, tgl_jatuh_tempo: editForm.tgl_jatuh_tempo, periode: editForm.periode })
+    })
+    const d = await r.json()
+    setToast({ msg: r.ok ? 'Tagihan diperbarui' : d.error, type: r.ok ? 'success' : 'error' })
+    if (r.ok) { setEditModal(false); load() }
   }
 
   const bayar = async (id, no) => {
@@ -225,6 +242,7 @@ export default function Tagihan() {
                   <td className="td"><JatuhTempo tgl={t.tgl_jatuh_tempo} status={t.status} /></td>
                   <td className="td"><Badge status={t.status} /></td>
                   <td className="td">
+                    <div className="flex gap-1">
                     {t.status !== 'Lunas'
                       ? <button onClick={() => bayar(t.id, t.no_tagihan)}
                           className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-pastel-mint text-accent-mint text-xs font-semibold hover:bg-green-100 transition-colors">
@@ -232,6 +250,11 @@ export default function Tagihan() {
                         </button>
                       : <span className="text-xs text-muted">-</span>
                     }
+                    <button onClick={() => openEdit(t)}
+                      className="w-7 h-7 rounded-lg bg-pastel-blue flex items-center justify-center text-accent-blue hover:bg-blue-100 transition-colors">
+                      <Edit2 size={12} />
+                    </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -315,6 +338,32 @@ export default function Tagihan() {
         <div className="px-6 pb-6 flex gap-3">
           <button onClick={() => setModal(false)} className="flex-1 py-2.5 rounded-xl border border-purple-100 text-sm font-semibold text-muted hover:bg-pastel-lavender">Batal</button>
           <button onClick={save} className="flex-1 py-2.5 rounded-xl btn-submit justify-center">Buat Tagihan</button>
+        </div>
+      </Modal>
+      <Modal open={editModal} onClose={() => setEditModal(false)} title="Edit Tagihan" headerColor="bg-pastel-blue">
+        <div className="p-6 space-y-4">
+          <div>
+            <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Periode</label>
+            <input className="input-field" placeholder="April 2026" value={editForm.periode}
+              onChange={e => setEditForm({ ...editForm, periode: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Jatuh Tempo</label>
+            <input className="input-field" type="date" value={editForm.tgl_jatuh_tempo}
+              onChange={e => setEditForm({ ...editForm, tgl_jatuh_tempo: e.target.value })} />
+          </div>
+          <div>
+            <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Status</label>
+            <select className="input-field" value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}>
+              <option>Belum Bayar</option>
+              <option>Terlambat</option>
+              <option>Lunas</option>
+            </select>
+          </div>
+        </div>
+        <div className="px-6 pb-6 flex gap-3">
+          <button onClick={() => setEditModal(false)} className="flex-1 py-2.5 rounded-xl border border-purple-100 text-sm font-semibold text-muted hover:bg-pastel-lavender">Batal</button>
+          <button onClick={saveEdit} className="flex-1 py-2.5 rounded-xl btn-submit justify-center">Simpan</button>
         </div>
       </Modal>
     </div>

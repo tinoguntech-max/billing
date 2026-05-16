@@ -96,6 +96,7 @@ router.post('/generate-otomatis', async (req, res) => {
     const currentMonth = today.getMonth() + 1
     const currentYear  = today.getFullYear()
     const mmyy         = `${String(currentMonth).padStart(2,'0')}${currentYear}`
+    const periode      = new Intl.DateTimeFormat('id-ID', { year:'numeric', month:'long' }).format(today)
 
     const [pelanggan] = await pool.query(`
       SELECT p.id, p.nama, p.tgl_bergabung, pk.harga
@@ -103,9 +104,9 @@ router.post('/generate-otomatis', async (req, res) => {
       WHERE p.status='Aktif' AND p.tgl_bergabung IS NOT NULL
         AND p.id NOT IN (
           SELECT id_pelanggan FROM tagihan
-          WHERE MONTH(created_at)=? AND YEAR(created_at)=?
+          WHERE periode=?
         )
-    `, [currentMonth, currentYear])
+    `, [periode])
 
     if (!pelanggan.length) return res.json({ success: true, message: '0 tagihan dibuat (semua sudah ada)', created: 0 })
 
@@ -123,10 +124,10 @@ router.post('/generate-otomatis', async (req, res) => {
       if (tanggal > today.getDate() && today.getMonth() === tglBergabung.getMonth())
         jatuhTempo = new Date(today.getFullYear(), today.getMonth() + 1, tanggal + 3)
 
-      const periode   = new Intl.DateTimeFormat('id-ID', { year:'numeric', month:'long' }).format(jatuhTempo)
+      const periodeTagihan = new Intl.DateTimeFormat('id-ID', { year:'numeric', month:'long' }).format(jatuhTempo)
       const noTagihan = `INV-${mmyy}-${String(Number(count) + i + 1).padStart(3,'0')}`
       placeholders.push('(?,?,?,?,?,?)')
-      values.push(noTagihan, p.id, periode, p.harga, jatuhTempo.toISOString().split('T')[0], 'Belum Bayar')
+      values.push(noTagihan, p.id, periodeTagihan, p.harga, jatuhTempo.toISOString().split('T')[0], 'Belum Bayar')
     })
 
     await pool.query(
