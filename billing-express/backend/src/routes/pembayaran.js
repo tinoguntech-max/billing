@@ -56,9 +56,9 @@ router.post('/', async (req, res) => {
         WHERE t.id = ?
       `, [id_tagihan])
 
-      const [[config]] = await pool.query('SELECT nama_isp, wa_notif_enabled FROM pengaturan LIMIT 1')
+      const [[config]] = await pool.query('SELECT nama_isp FROM pengaturan LIMIT 1')
 
-      if (tagihan?.telepon && tagihan.telepon !== '-' && config?.wa_notif_enabled) {
+      if (tagihan?.telepon && tagihan.telepon !== '-') {
         const { sendWhatsAppDirect } = require('../services/whatsapp-gateway')
         const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
         

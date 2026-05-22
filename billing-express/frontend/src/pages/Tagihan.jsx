@@ -2,7 +2,7 @@
 import { apiFetch } from '../lib/api'
 import Modal from '../components/Modal'
 import Toast from '../components/Toast'
-import { Plus, CheckCircle, Zap, Search, ChevronUp, ChevronDown, Edit2 } from 'lucide-react'
+import { Plus, CheckCircle, Zap, Search, ChevronUp, ChevronDown, Edit2, MessageCircle } from 'lucide-react'
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
 
@@ -41,6 +41,7 @@ export default function Tagihan() {
   const [form, setForm]           = useState({ ...emptyForm })
   const [toast, setToast]         = useState(null)
   const [generating, setGenerating] = useState(false)
+  const [sendingNotif, setSendingNotif] = useState(false)
   const [editModal, setEditModal]   = useState(false)
   const [editForm, setEditForm]     = useState({ id: 0, periode: '', tgl_jatuh_tempo: '', status: '' })
   const [summary, setSummary]     = useState({})
@@ -87,6 +88,16 @@ export default function Tagihan() {
   const SortIcon = ({ col }) => {
     if (sortBy !== col) return <ChevronUp size={13} className="opacity-30" />
     return sortOrder === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />
+  }
+
+  const kirimNotifSemua = async () => {
+    if (!confirm('Kirim notifikasi WA ke semua pelanggan yang jatuh tempo & terlambat?')) return
+    setSendingNotif(true)
+    const r = await apiFetch('/api/whatsapp/kirim-notif', { method: 'POST' })
+    const d = await r.json()
+    if (r.ok) setToast({ msg: `✅ Terkirim: ${d.jatuhTempo} jatuh tempo, ${d.terlambat} terlambat`, type: 'success' })
+    else setToast({ msg: d.error || 'Gagal kirim notif', type: 'error' })
+    setSendingNotif(false)
   }
 
   const generateOtomatis = async () => {
@@ -151,6 +162,9 @@ export default function Tagihan() {
           <p className="text-muted text-sm mt-1">Buat dan kelola tagihan pelanggan</p>
         </div>
         <div className="flex gap-3 flex-wrap">
+          <button onClick={kirimNotifSemua} disabled={sendingNotif} className="btn-green w-fit disabled:opacity-50">
+            <MessageCircle size={16} /> {sendingNotif ? 'Mengirim...' : 'Kirim Notif WA'}
+          </button>
           <button onClick={generateOtomatis} disabled={generating} className="btn-blue w-fit disabled:opacity-50">
             <Zap size={16} /> {generating ? 'Memproses...' : 'Generate Otomatis'}
           </button>
