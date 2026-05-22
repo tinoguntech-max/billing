@@ -38,6 +38,10 @@ Tagihan Anda jatuh tempo *hari ini*.
 • Jumlah      : ${fmt(t.jumlah)}
 • Jatuh Tempo : ${todayStr}
 
+💳 *Pembayaran via Transfer:*
+Bank BCA : *0482276308*
+a.n : *Tiko Setiawan*
+
 Mohon segera lakukan pembayaran.
 
 Terima kasih 🙏
@@ -72,6 +76,10 @@ Tagihan Anda sudah *terlambat ${t.hari_terlambat} hari*.
 • Periode     : ${t.periode}
 • Jumlah      : ${fmt(t.jumlah)}
 • Jatuh Tempo : ${String(t.tgl_jatuh_tempo).slice(0,10)}
+
+💳 *Pembayaran via Transfer:*
+Bank BCA : *0482276308*
+a.n : *Tiko Setiawan*
 
 Mohon segera lakukan pembayaran untuk menghindari pemutusan layanan.
 
