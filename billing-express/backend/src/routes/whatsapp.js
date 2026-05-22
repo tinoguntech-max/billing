@@ -160,4 +160,15 @@ router.post('/send-to-customer/:id', async (req, res) => {
   }
 })
 
+// POST /api/whatsapp/kirim-notif - Trigger notif manual
+router.post('/kirim-notif', async (req, res) => {
+  try {
+    const { kirimNotifJatuhTempo } = require('../services/wa-notif')
+    const result = await kirimNotifJatuhTempo()
+    res.json({ success: true, ...result })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
 module.exports = router

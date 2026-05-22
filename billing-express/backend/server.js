@@ -59,4 +59,12 @@ app.listen(PORT, () => {
   } catch (error) {
     console.error('⚠️ Monitoring service failed to start:', error.message)
   }
+
+  // Start WA notification scheduler
+  try {
+    const { startWANotifScheduler } = require('./src/services/wa-notif')
+    startWANotifScheduler()
+  } catch (error) {
+    console.error('⚠️ WA Notif Scheduler failed to start:', error.message)
+  }
 })
