@@ -16,6 +16,7 @@ function initializeWhatsApp() {
     puppeteer: {
       headless: true,
       executablePath: '/usr/bin/google-chrome-stable',
+      protocolTimeout: 60000,
       args: [
         '--no-sandbox',
         '--disable-setuid-sandbox',
