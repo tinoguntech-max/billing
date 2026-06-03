@@ -67,4 +67,32 @@ app.listen(PORT, () => {
   } catch (error) {
     console.error('⚠️ WA Notif Scheduler failed to start:', error.message)
   }
+
+  // Auto generate tagihan setiap tanggal 1
+  try {
+    const scheduleAutoGenerate = () => {
+      const now  = new Date()
+      const next = new Date(now.getFullYear(), now.getMonth() + (now.getDate() === 1 && now.getHours() < 1 ? 0 : 1), 1, 0, 1, 0)
+      const delay = next - now
+      console.log(`📅 Auto generate tagihan dijadwalkan dalam ${Math.round(delay/1000/60)} menit`)
+      setTimeout(async () => {
+        try {
+          const pool = require('./src/db')
+          const today = new Date()
+          const periode = new Intl.DateTimeFormat('id-ID', { year:'numeric', month:'long' }).format(today)
+          const [existing] = await pool.query('SELECT COUNT(*) AS c FROM tagihan WHERE periode=?', [periode])
+          if (existing[0].c === 0) {
+            const axios = require('axios')
+            const PORT = process.env.PORT || 5000
+            await axios.post(`http://localhost:${PORT}/api/tagihan/generate-otomatis`)
+            console.log('✅ Auto generate tagihan berhasil')
+          }
+        } catch(e) { console.error('❌ Auto generate error:', e.message) }
+        scheduleAutoGenerate()
+      }, delay)
+    }
+    scheduleAutoGenerate()
+  } catch (error) {
+    console.error('⚠️ Auto generate scheduler failed:', error.message)
+  }
 })
