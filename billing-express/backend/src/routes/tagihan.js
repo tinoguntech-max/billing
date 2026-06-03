@@ -117,17 +117,19 @@ router.post('/generate-otomatis', async (req, res) => {
 
     const placeholders = []
     const values = []
-    pelanggan.forEach((p, i) => {
-      const tglBergabung    = new Date(p.tgl_bergabung)
-      const tanggal         = tglBergabung.getDate()
-      let jatuhTempo = new Date(today.getFullYear(), today.getMonth(), tanggal + 3)
-      if (tanggal > today.getDate() && today.getMonth() === tglBergabung.getMonth())
-        jatuhTempo = new Date(today.getFullYear(), today.getMonth() + 1, tanggal + 3)
+    const periodeGenerate = new Intl.DateTimeFormat('id-ID', { year:'numeric', month:'long' }).format(today)
 
-      const periodeTagihan = new Intl.DateTimeFormat('id-ID', { year:'numeric', month:'long' }).format(jatuhTempo)
+    pelanggan.forEach((p, i) => {
+      const tglBergabung = new Date(p.tgl_bergabung)
+      const tanggal      = tglBergabung.getDate()
+      // Jatuh tempo = tanggal bergabung + 3 hari, tapi tetap di bulan yang sama
+      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+      const tglJatuhTempo  = Math.min(tanggal + 3, lastDayOfMonth)
+      const jatuhTempo     = new Date(today.getFullYear(), today.getMonth(), tglJatuhTempo)
+
       const noTagihan = `INV-${mmyy}-${String(Number(count) + i + 1).padStart(3,'0')}`
       placeholders.push('(?,?,?,?,?,?)')
-      values.push(noTagihan, p.id, periodeTagihan, p.harga, jatuhTempo.toISOString().split('T')[0], 'Belum Bayar')
+      values.push(noTagihan, p.id, periodeGenerate, p.harga, jatuhTempo.toISOString().split('T')[0], 'Belum Bayar')
     })
 
     await pool.query(
