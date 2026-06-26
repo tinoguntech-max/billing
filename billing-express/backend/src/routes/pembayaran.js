@@ -59,8 +59,7 @@ router.post('/', async (req, res) => {
       const [[config]] = await pool.query('SELECT nama_isp FROM pengaturan LIMIT 1')
 
       if (tagihan?.telepon && tagihan.telepon !== '-') {
-        const { sendWhatsAppDirect } = require('../services/whatsapp-gateway')
-        const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+        const { sendWA } = require('../services/fonnte')
         
         const message = `✅ *Konfirmasi Pembayaran*
 
@@ -75,11 +74,15 @@ Pembayaran Anda telah kami terima.
 • Metode: ${metode || 'Tunai'}
 • Tanggal: ${new Date(tglFormatted).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
 
+💳 *Info Transfer:*
+Bank BCA : *0482276308*
+a.n : *Tiko Setiawan*
+
 Terima kasih telah membayar tepat waktu! 🙏
 
 _${config?.nama_isp || 'TamNet Internet Provider'}_`
 
-        sendWhatsAppDirect(tagihan.telepon, message).catch(() => {})
+        sendWA(tagihan.telepon, message).catch(() => {})
       }
     } catch (waErr) {
       // Jangan gagalkan pembayaran jika WA error
