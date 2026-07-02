@@ -1,5 +1,5 @@
 const pool = require('../db')
-const { sendWA } = require('./fonnte')
+const { sendWhatsApp } = require('./whatsapp')
 
 function fmt(n) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
@@ -47,7 +47,7 @@ Mohon segera lakukan pembayaran.
 Terima kasih 🙏
 _${namaISP}_`
 
-      const result = await sendWA(t.telepon, msg)
+      const result = await sendWhatsApp(t.telepon, msg)
       console.log(`${result.success ? '✅' : '❌'} Notif jatuh tempo → ${t.nama} (${t.telepon}): ${result.message}`)
     }
 
@@ -86,7 +86,7 @@ Mohon segera lakukan pembayaran untuk menghindari pemutusan layanan.
 Terima kasih 🙏
 _${namaISP}_`
 
-      const result = await sendWA(t.telepon, msg)
+      const result = await sendWhatsApp(t.telepon, msg)
       console.log(`${result.success ? '✅' : '❌'} Notif terlambat → ${t.nama} (${t.telepon}): ${result.message}`)
     }
 

@@ -61,7 +61,7 @@ router.post('/', async (req, res) => {
       const [[config]] = await pool.query('SELECT nama_isp FROM pengaturan LIMIT 1')
 
       if (tagihan?.telepon && tagihan.telepon !== '-') {
-        const { sendWA } = require('../services/fonnte')
+        const { sendWhatsApp } = require('../services/whatsapp')
         
         const message = `✅ *Konfirmasi Pembayaran*
 
@@ -84,7 +84,7 @@ Terima kasih telah membayar tepat waktu! 🙏
 
 _${config?.nama_isp || 'TamNet Internet Provider'}_`
 
-        sendWA(tagihan.telepon, message).catch(() => {})
+        sendWhatsApp(tagihan.telepon, message).catch(() => {})
       }
     } catch (waErr) {
       // Jangan gagalkan pembayaran jika WA error
@@ -115,7 +115,7 @@ router.post('/:id/kirim-nota', async (req, res) => {
     }
 
     const [[config]] = await pool.query('SELECT nama_isp FROM pengaturan LIMIT 1')
-    const { sendWA } = require('../services/fonnte')
+    const { sendWhatsApp } = require('../services/whatsapp')
 
     const message = `✅ *Konfirmasi Pembayaran*
 
@@ -138,7 +138,7 @@ Terima kasih telah membayar tepat waktu! 🙏
 
 _${config?.nama_isp || 'TamNet Internet Provider'}_`
 
-    const result = await sendWA(pembayaran.telepon, message)
+    const result = await sendWhatsApp(pembayaran.telepon, message)
     if (result.success) {
       res.json({ success: true, message: 'Nota pembayaran berhasil dikirim' })
     } else {
