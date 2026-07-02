@@ -95,6 +95,60 @@ _${config?.nama_isp || 'TamNet Internet Provider'}_`
   } catch (e) { res.status(500).json({ error: e.message }) }
 })
 
+router.post('/:id/kirim-nota', async (req, res) => {
+  try {
+    const [[pembayaran]] = await pool.query(`
+      SELECT py.*, t.no_tagihan, p.nama, p.telepon, pk.nama_paket
+      FROM pembayaran py
+      JOIN tagihan t ON py.id_tagihan = t.id
+      JOIN pelanggan p ON t.id_pelanggan = p.id
+      LEFT JOIN paket pk ON p.id_paket = pk.id
+      WHERE py.id = ?
+    `, [req.params.id])
+
+    if (!pembayaran) {
+      return res.status(404).json({ success: false, error: 'Pembayaran tidak ditemukan' })
+    }
+
+    if (!pembayaran.telepon || pembayaran.telepon === '-' || !pembayaran.telepon.trim()) {
+      return res.status(400).json({ success: false, error: 'Nomor telepon pelanggan tidak valid' })
+    }
+
+    const [[config]] = await pool.query('SELECT nama_isp FROM pengaturan LIMIT 1')
+    const { sendWA } = require('../services/fonnte')
+
+    const message = `✅ *Konfirmasi Pembayaran*
+
+Halo *${pembayaran.nama}*,
+
+Pembayaran Anda telah kami terima.
+
+📋 *Detail Pembayaran:*
+• No. Tagihan: ${pembayaran.no_tagihan || '-'}
+• Paket: ${pembayaran.nama_paket || '-'}
+• Jumlah: *${fmt(pembayaran.jumlah)}*
+• Metode: ${pembayaran.metode || 'Tunai'}
+• Tanggal: ${new Date(pembayaran.tgl_bayar).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+
+💳 *Info Transfer:*
+Bank BCA : *0482276308*
+a.n : *Tiko Setiawan*
+
+Terima kasih telah membayar tepat waktu! 🙏
+
+_${config?.nama_isp || 'TamNet Internet Provider'}_`
+
+    const result = await sendWA(pembayaran.telepon, message)
+    if (result.success) {
+      res.json({ success: true, message: 'Nota pembayaran berhasil dikirim' })
+    } else {
+      res.status(500).json({ success: false, error: result.message || 'Gagal mengirim nota' })
+    }
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message })
+  }
+})
+
 router.delete('/:id', async (req, res) => {
   try {
     // Ambil id_tagihan dulu sebelum hapus

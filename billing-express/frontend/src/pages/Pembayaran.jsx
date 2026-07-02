@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { apiFetch } from '../lib/api'
 import Modal from '../components/Modal'
 import Toast from '../components/Toast'
-import { Plus, University, Banknote, QrCode, Wallet, Trash2, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, University, Banknote, QrCode, Wallet, Trash2, Search, ChevronUp, ChevronDown, Send } from 'lucide-react'
 
 const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
 const MetodeIcon = { 'Transfer Bank': University, Tunai: Banknote, QRIS: QrCode, 'E-Wallet': Wallet }
@@ -81,6 +81,16 @@ export default function Pembayaran() {
     const d = await r.json()
     setToast({ msg: r.ok ? 'Pembayaran dihapus' : d.error, type: r.ok ? 'success' : 'error' })
     if (r.ok) { load(); loadSaldo() }
+  }
+
+  const kirimNota = async id => {
+    try {
+      const r = await apiFetch(`/api/pembayaran/${id}/kirim-nota`, { method: 'POST' })
+      const d = await r.json()
+      setToast({ msg: r.ok ? 'Nota pembayaran berhasil dikirim!' : d.error, type: r.ok ? 'success' : 'error' })
+    } catch (err) {
+      setToast({ msg: 'Gagal mengirim nota: ' + err.message, type: 'error' })
+    }
   }
 
   const save = async () => {
@@ -192,9 +202,14 @@ export default function Pembayaran() {
                     <td className="td text-xs text-muted">{String(b.tgl_bayar).slice(0, 16).replace('T', ' ')}</td>
                     <td className="td"><span className="badge badge-paid">Berhasil</span></td>
                     <td className="td">
-                      <button onClick={() => hapus(b.id)} className="w-7 h-7 rounded-lg bg-pastel-pink flex items-center justify-center text-accent-pink hover:bg-pink-100 transition-colors">
-                        <Trash2 size={12} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => kirimNota(b.id)} className="w-7 h-7 rounded-lg bg-pastel-blue flex items-center justify-center text-accent-blue hover:bg-blue-100 transition-colors" title="Kirim Nota via WA">
+                          <Send size={11} />
+                        </button>
+                        <button onClick={() => hapus(b.id)} className="w-7 h-7 rounded-lg bg-pastel-pink flex items-center justify-center text-accent-pink hover:bg-pink-100 transition-colors" title="Hapus">
+                          <Trash2 size={11} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
