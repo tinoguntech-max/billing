@@ -1,6 +1,8 @@
 const router = require('express').Router()
 const pool   = require('../db')
 
+const fmt = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n)
+
 router.get('/', async (req, res) => {
   try {
     const { page = 1, limit = 10, search = '', sortBy = 'created_at', sortOrder = 'desc', metode = '' } = req.query
