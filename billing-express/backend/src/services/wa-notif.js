@@ -105,6 +105,8 @@ function startWANotifScheduler() {
     const jam8 = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0)
     let delay = jam8 - now
     if (delay < 0) delay += 24 * 60 * 60 * 1000 // besok jam 8
+    // Pastikan delay tidak overflow 32-bit integer (~24.8 hari max)
+    delay = Math.min(delay, 2147483647)
 
     console.log(`⏰ Notif WA dijadwalkan dalam ${Math.round(delay/1000/60)} menit`)
 

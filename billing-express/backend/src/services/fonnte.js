@@ -13,7 +13,7 @@ async function sendWA(phone, message) {
       return resolve({ success: false, message: 'Token tidak diset' })
     }
 
-    const body = JSON.stringify({ target: nomor, message, countryCode: '62' })
+    const body = new URLSearchParams({ target: nomor, message, countryCode: '62' }).toString()
 
     const options = {
       hostname: 'api.fonnte.com',
@@ -21,7 +21,7 @@ async function sendWA(phone, message) {
       method: 'POST',
       headers: {
         'Authorization': token,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'Content-Length': Buffer.byteLength(body)
       }
     }
