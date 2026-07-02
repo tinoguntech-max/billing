@@ -78,22 +78,34 @@ app.listen(PORT, () => {
       const now  = new Date()
       const next = new Date(now.getFullYear(), now.getMonth() + (now.getDate() === 1 && now.getHours() < 1 ? 0 : 1), 1, 0, 1, 0)
       const delay = next - now
-      console.log(`📅 Auto generate tagihan dijadwalkan dalam ${Math.round(delay/1000/60)} menit`)
+      
+      // Batasi delay agar tidak melebihi batas 32-bit signed integer (maksimal ~24.8 hari).
+      // Kita jalankan interval pengecekan maksimal setiap 1 jam (3600000 ms) agar aman.
+      const MAX_DELAY = 3600000 
+      const isActualRun = delay <= MAX_DELAY
+      const currentDelay = Math.min(delay, MAX_DELAY)
+      
+      if (isActualRun) {
+        console.log(`📅 Auto generate tagihan dijadwalkan dalam ${Math.round(delay/1000/60)} menit`)
+      }
+      
       setTimeout(async () => {
         try {
-          const pool = require('./src/db')
-          const today = new Date()
-          const periode = new Intl.DateTimeFormat('id-ID', { year:'numeric', month:'long' }).format(today)
-          const [existing] = await pool.query('SELECT COUNT(*) AS c FROM tagihan WHERE periode=?', [periode])
-          if (existing[0].c === 0) {
-            const axios = require('axios')
-            const PORT = process.env.PORT || 5000
-            await axios.post(`http://localhost:${PORT}/api/tagihan/generate-otomatis`)
-            console.log('✅ Auto generate tagihan berhasil')
+          if (isActualRun) {
+            const pool = require('./src/db')
+            const today = new Date()
+            const periode = new Intl.DateTimeFormat('id-ID', { year:'numeric', month:'long' }).format(today)
+            const [existing] = await pool.query('SELECT COUNT(*) AS c FROM tagihan WHERE periode=?', [periode])
+            if (existing[0].c === 0) {
+              const axios = require('axios')
+              const PORT = process.env.PORT || 5000
+              await axios.post(`http://localhost:${PORT}/api/tagihan/generate-otomatis`)
+              console.log('✅ Auto generate tagihan berhasil')
+            }
           }
         } catch(e) { console.error('❌ Auto generate error:', e.message) }
         scheduleAutoGenerate()
-      }, delay)
+      }, currentDelay)
     }
     scheduleAutoGenerate()
   } catch (error) {
