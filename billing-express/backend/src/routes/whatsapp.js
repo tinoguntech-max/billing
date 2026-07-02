@@ -149,8 +149,17 @@ router.post('/send-to-customer/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: 'Pelanggan tidak memiliki nomor telepon yang valid' })
     }
     
-    // Kirim pesan
-    const result = await sendWhatsAppDirect(pelanggan.telepon, message)
+    // Kirim pesan - Cek apakah menggunakan API eksternal (Fonnte/Wablas) atau local gateway
+    const [[config]] = await pool.query('SELECT wa_notif_enabled, wa_api_url FROM pengaturan LIMIT 1')
+    
+    let result;
+    if (config && config.wa_notif_enabled && config.wa_api_url && config.wa_api_url.trim()) {
+      const { sendWhatsApp } = require('../services/whatsapp')
+      result = await sendWhatsApp(pelanggan.telepon, message)
+    } else {
+      result = await sendWhatsAppDirect(pelanggan.telepon, message)
+    }
+    
     res.json(result)
   } catch (error) {
     res.status(500).json({ success: false, error: error.message })
