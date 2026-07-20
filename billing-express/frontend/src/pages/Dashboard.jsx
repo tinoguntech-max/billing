@@ -15,21 +15,29 @@ const paketColors = ['#9B6FD4', '#4BA3E3', '#2EC98A', '#F5C842']
 export default function Dashboard() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    apiFetch('/api/dashboard').then(r => r.json()).then(d => { setData(d); setLoading(false) })
+    apiFetch('/api/dashboard')
+      .then(r => {
+        if (!r.ok) throw new Error(`Gagal memuat dashboard: ${r.status}`)
+        return r.json()
+      })
+      .then(d => setData(d))
+      .catch(err => setError(err.message || 'Gagal memuat dashboard'))
+      .finally(() => setLoading(false))
   }, [])
 
   const today = new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-  const statCards = data ? [
-    { label: 'Total Pelanggan',      value: data.pelanggan.total,  icon: Users,       bg: 'bg-pastel-purple', accent: 'text-accent-purple', pct: 72 },
-    { label: 'Pendapatan Bulan Ini', value: fmt(data.pendapatan),  icon: TrendingUp,  bg: 'bg-pastel-mint',   accent: 'text-accent-mint',   pct: 60 },
-    { label: 'Tagihan Belum Bayar',  value: data.tagihan.belum,    sub: fmt(data.tagihan.nominal_belum ?? 0), icon: AlertCircle, bg: 'bg-pastel-pink',   accent: 'text-accent-pink',   pct: 35 },
-    { label: 'Saldo Kas',            value: fmt(data.saldo ?? 0),  icon: Wallet,      bg: data.saldo >= 0 ? 'bg-pastel-blue' : 'bg-pastel-pink', accent: data.saldo >= 0 ? 'text-accent-blue' : 'text-accent-pink', pct: 80 },
-  ] : []
+  const statCards = [
+    { label: 'Total Pelanggan',      value: data?.pelanggan?.total ?? 0,  icon: Users,       bg: 'bg-pastel-purple', accent: 'text-accent-purple', pct: 72 },
+    { label: 'Pendapatan Bulan Ini', value: fmt(data?.pendapatan ?? 0),  icon: TrendingUp,  bg: 'bg-pastel-mint',   accent: 'text-accent-mint',   pct: 60 },
+    { label: 'Tagihan Belum Bayar',  value: data?.tagihan?.belum ?? 0,    sub: fmt(data?.tagihan?.nominal_belum ?? 0), icon: AlertCircle, bg: 'bg-pastel-pink',   accent: 'text-accent-pink',   pct: 35 },
+    { label: 'Saldo Kas',            value: fmt(data?.saldo ?? 0),  icon: Wallet,      bg: (data?.saldo ?? 0) >= 0 ? 'bg-pastel-blue' : 'bg-pastel-pink', accent: (data?.saldo ?? 0) >= 0 ? 'text-accent-blue' : 'text-accent-pink', pct: 80 },
+  ]
 
-  const totalPaket = data?.distribusiPaket?.reduce((s, p) => s + Number(p.jumlah), 0) || 1
+  const totalPaket = (data?.distribusiPaket ?? []).reduce((s, p) => s + Number(p.jumlah), 0) || 1
 
   return (
     <div>
@@ -50,21 +58,23 @@ export default function Dashboard() {
               <div className="h-4 bg-gray-100 rounded w-1/2" />
             </div>
           ))}</div>
-        : <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {statCards.map((s, i) => (
-              <div key={i} className="card p-5 hover:-translate-y-1 transition-transform duration-200 cursor-default">
-                <div className="flex items-center justify-between mb-3">
-                  <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}>
-                    <s.icon size={18} className={s.accent} />
+        : error
+          ? <div className="card p-5 text-center text-red-600">{error}</div>
+          : <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              {statCards.map((s, i) => (
+                <div key={i} className="card p-5 hover:-translate-y-1 transition-transform duration-200 cursor-default">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}>
+                      <s.icon size={18} className={s.accent} />
+                    </div>
                   </div>
+                  <div className="text-2xl font-bold text-dark">{s.value}</div>
+                  <div className="text-sm text-muted mt-1">{s.label}</div>
+                  {s.sub && <div className="text-xs font-mono text-accent-pink mt-0.5">{s.sub}</div>}
+                  <div className="progress-bar"><div className="progress-fill" style={{ width: `${s.pct}%` }} /></div>
                 </div>
-                <div className="text-2xl font-bold text-dark">{s.value}</div>
-                <div className="text-sm text-muted mt-1">{s.label}</div>
-                {s.sub && <div className="text-xs font-mono text-accent-pink mt-0.5">{s.sub}</div>}
-                <div className="progress-bar"><div className="progress-fill" style={{ width: `${s.pct}%` }} /></div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
       }
 
       {/* Charts */}

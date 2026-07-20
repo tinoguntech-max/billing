@@ -14,8 +14,7 @@ function initializeWhatsApp() {
       dataPath: './whatsapp-session'
     }),
     puppeteer: {
-      headless: true,
-      executablePath: '/usr/bin/google-chrome-stable',
+      headless: "new",
       protocolTimeout: 60000,
       args: [
         '--no-sandbox',
@@ -24,6 +23,7 @@ function initializeWhatsApp() {
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
         '--no-zygote',
+        '--single-process',
         '--disable-gpu'
       ]
     }

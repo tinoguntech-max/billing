@@ -58,12 +58,12 @@ export async function POST(req: NextRequest) {
     if (existing.length > 0) {
       // Update
       const updateQuery = logo_url
-        ? `UPDATE pengaturan SET nama_isp=?, telepon=?, email=?, website=?, alamat=?, logo_url=?`
-        : `UPDATE pengaturan SET nama_isp=?, telepon=?, email=?, website=?, alamat=?`
+        ? `UPDATE pengaturan SET nama_isp=?, telepon=?, email=?, website=?, alamat=?, logo_url=? WHERE id=?`
+        : `UPDATE pengaturan SET nama_isp=?, telepon=?, email=?, website=?, alamat=? WHERE id=?`
 
       const params = logo_url
-        ? [nama_isp, telepon, email, website, alamat, logo_url]
-        : [nama_isp, telepon, email, website, alamat]
+        ? [nama_isp, telepon, email, website, alamat, logo_url, existing[0].id]
+        : [nama_isp, telepon, email, website, alamat, existing[0].id]
 
       await pool.query(updateQuery, params)
     } else {

@@ -64,16 +64,32 @@ async function init() {
     ) ENGINE=InnoDB;
 
     CREATE TABLE IF NOT EXISTS pengaturan (
-      id         INT AUTO_INCREMENT PRIMARY KEY,
-      nama_isp   VARCHAR(100),
-      telepon    VARCHAR(20),
-      email      VARCHAR(100),
-      website    VARCHAR(100),
-      alamat     TEXT,
-      logo_url   VARCHAR(255),
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      id              INT AUTO_INCREMENT PRIMARY KEY,
+      nama_isp        VARCHAR(100),
+      telepon         VARCHAR(20),
+      email           VARCHAR(100),
+      website         VARCHAR(100),
+      alamat          TEXT,
+      logo_url        VARCHAR(255),
+      mikrotik_host   VARCHAR(100),
+      mikrotik_user   VARCHAR(100),
+      mikrotik_password VARCHAR(255),
+      mikrotik_port   VARCHAR(10) DEFAULT '8728',
+      wa_api_url      VARCHAR(255),
+      wa_api_token    VARCHAR(255),
+      wa_notif_enabled TINYINT(1) DEFAULT 0,
+      created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB;
+
+    ALTER TABLE pengaturan
+      ADD COLUMN IF NOT EXISTS mikrotik_host VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS mikrotik_user VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS mikrotik_password VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS mikrotik_port VARCHAR(10) DEFAULT '8728',
+      ADD COLUMN IF NOT EXISTS wa_api_url VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS wa_api_token VARCHAR(255),
+      ADD COLUMN IF NOT EXISTS wa_notif_enabled TINYINT(1) DEFAULT 0;
 
     CREATE TABLE IF NOT EXISTS pengeluaran (
       id              INT AUTO_INCREMENT PRIMARY KEY,
@@ -82,6 +98,15 @@ async function init() {
       tgl_pengeluaran DATE NOT NULL,
       keterangan      TEXT,
       created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB;
+
+    CREATE TABLE IF NOT EXISTS pemasukan (
+      id              INT AUTO_INCREMENT PRIMARY KEY,
+      kategori        VARCHAR(50)    NOT NULL,
+      jumlah          DECIMAL(15,2)  NOT NULL,
+      tgl_pemasukan   DATE           NOT NULL,
+      keterangan      TEXT,
+      created_at      TIMESTAMP      DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB;
 
     CREATE TABLE IF NOT EXISTS karyawan (

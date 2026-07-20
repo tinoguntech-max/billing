@@ -43,7 +43,7 @@ export default function TagihanPage() {
   const [sortDir,   setSortDir]   = useState<SortDir>('desc')
   const [page,      setPage]      = useState(1)
   const [pageSize,  setPageSize]  = useState(10)
-  const [filterTab, setFilterTab] = useState<'semua'|'jatuh_tempo'|'terlambat'>('terlambat')
+  const [filterTab, setFilterTab] = useState<'semua'|'jatuh_tempo'|'terlambat'>('semua')
   const [search,    setSearch]    = useState('')
   const [filterPeriode, setFilterPeriode] = useState('')
   const [filterPaket,   setFilterPaket]   = useState('')

@@ -79,10 +79,17 @@ export default function Pelanggan() {
   }
   const save = async () => {
     if (!form.nama || !form.telepon) { setToast({ msg: 'Nama dan telepon wajib diisi', type: 'error' }); return }
+    if (form.latitude !== '' && Number.isNaN(Number(form.latitude))) { setToast({ msg: 'Latitude tidak valid', type: 'error' }); return }
+    if (form.longitude !== '' && Number.isNaN(Number(form.longitude))) { setToast({ msg: 'Longitude tidak valid', type: 'error' }); return }
+    const payload = {
+      ...form,
+      latitude: form.latitude === '' ? null : Number(form.latitude),
+      longitude: form.longitude === '' ? null : Number(form.longitude),
+    }
     const r = await fetch(editId ? `/api/pelanggan/${editId}` : '/api/pelanggan', {
       method: editId ? 'PUT' : 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     })
     const d = await r.json()
     if (!r.ok) { setToast({ msg: d.error, type: 'error' }); return }

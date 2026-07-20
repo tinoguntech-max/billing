@@ -54,7 +54,8 @@ export default function DashboardPage() {
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="card p-5 animate-pulse">
+            <div key={i} className="card p-5 animate-pulse relative overflow-hidden">
+              <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-purple-200 to-sky-200" />
               <div className="w-10 h-10 rounded-xl bg-gray-100 mb-3" />
               <div className="h-7 bg-gray-100 rounded mb-2 w-3/4" />
               <div className="h-4 bg-gray-100 rounded w-1/2" />
@@ -64,16 +65,22 @@ export default function DashboardPage() {
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {statCards.map((s, i) => (
-            <div key={i} className="card p-5 hover:-translate-y-1 transition-transform duration-200 cursor-default">
-              <div className="flex items-center justify-between mb-3">
-                <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center`}>
+            <div
+              key={i}
+              className="card p-5 hover:-translate-y-1 transition-all duration-200 cursor-default relative overflow-hidden shadow-[0_10px_30px_rgba(155,111,212,0.12)]"
+            >
+              <div className="absolute inset-y-0 left-0 w-1.5 rounded-l-2xl bg-gradient-to-b from-purple-400 to-sky-400" />
+              <div className="flex items-center justify-between mb-3 pl-2">
+                <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center shadow-sm`}>
                   <s.icon size={18} className={s.accent} />
                 </div>
               </div>
-              <div className="text-2xl font-bold text-dark">{s.value}</div>
-              <div className="text-sm text-muted mt-1">{s.label}</div>
-              <div className="progress-bar mt-3">
-                <div className="progress-fill" style={{ width: `${s.pct}%` }} />
+              <div className="pl-2">
+                <div className="text-2xl font-bold text-dark">{s.value}</div>
+                <div className="text-sm text-muted mt-1">{s.label}</div>
+                <div className="progress-bar mt-3">
+                  <div className="progress-fill" style={{ width: `${s.pct}%` }} />
+                </div>
               </div>
             </div>
           ))}

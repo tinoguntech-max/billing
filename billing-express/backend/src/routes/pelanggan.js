@@ -39,12 +39,14 @@ router.post('/', async (req, res) => {
   try {
     const { nama, email, telepon, alamat, ip_address, id_paket, status, tgl_bergabung, latitude, longitude } = req.body
     if (!nama || !telepon) return res.status(400).json({ error: 'Nama dan telepon wajib diisi' })
+    const lat = latitude !== undefined && latitude !== null && latitude !== '' ? Number(latitude) : null
+    const lng = longitude !== undefined && longitude !== null && longitude !== '' ? Number(longitude) : null
     const [r] = await pool.query(
       `INSERT INTO pelanggan (nama,email,telepon,alamat,ip_address,id_paket,status,tgl_bergabung,latitude,longitude)
        VALUES (?,?,?,?,?,?,?,?,?,?)`,
       [nama, email, telepon, alamat, ip_address, id_paket || null, status || 'Aktif',
        tgl_bergabung || new Date().toISOString().split('T')[0],
-       latitude || null, longitude || null]
+       Number.isFinite(lat) ? lat : null, Number.isFinite(lng) ? lng : null]
     )
     res.status(201).json({ id: r.insertId, message: 'Pelanggan berhasil ditambahkan' })
   } catch (e) { res.status(500).json({ error: e.message }) }
@@ -53,10 +55,12 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const { nama, email, telepon, alamat, ip_address, id_paket, status, tgl_bergabung, latitude, longitude } = req.body
+    const lat = latitude !== undefined && latitude !== null && latitude !== '' ? Number(latitude) : null
+    const lng = longitude !== undefined && longitude !== null && longitude !== '' ? Number(longitude) : null
     await pool.query(
       `UPDATE pelanggan SET nama=?,email=?,telepon=?,alamat=?,ip_address=?,id_paket=?,status=?,tgl_bergabung=?,latitude=?,longitude=? WHERE id=?`,
       [nama, email, telepon, alamat, ip_address, id_paket || null, status, tgl_bergabung,
-       latitude || null, longitude || null, req.params.id]
+       Number.isFinite(lat) ? lat : null, Number.isFinite(lng) ? lng : null, req.params.id]
     )
     res.json({ message: 'Pelanggan diperbarui' })
   } catch (e) { res.status(500).json({ error: e.message }) }

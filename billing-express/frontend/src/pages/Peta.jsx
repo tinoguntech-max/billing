@@ -28,12 +28,18 @@ const icons = {
   nonaktif: createIcon('grey'),
 }
 
+function isValidLocation(latitude, longitude) {
+  const lat = parseFloat(latitude)
+  const lng = parseFloat(longitude)
+  return Number.isFinite(lat) && Number.isFinite(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+}
+
 function FitBounds({ pelanggan }) {
   const map = useMap()
   useEffect(() => {
-    const valid = pelanggan.filter(p => p.latitude && p.longitude)
+    const valid = pelanggan.filter(p => isValidLocation(p.latitude, p.longitude))
     if (valid.length > 0) {
-      const bounds = L.latLngBounds(valid.map(p => [p.latitude, p.longitude]))
+      const bounds = L.latLngBounds(valid.map(p => [parseFloat(p.latitude), parseFloat(p.longitude)]))
       map.fitBounds(bounds, { padding: [50, 50] })
     }
   }, [pelanggan, map])
@@ -58,7 +64,7 @@ export default function Peta() {
   useEffect(() => { load() }, [])
 
   const filtered = pelanggan.filter(p => {
-    if (!p.latitude || !p.longitude) return false
+    if (!isValidLocation(p.latitude, p.longitude)) return false
     if (filter === 'semua') return true
     if (filter === 'online') return p.status_online === 'Online'
     if (filter === 'offline') return p.status_online === 'Offline'
@@ -75,10 +81,10 @@ export default function Peta() {
   }
 
   const stats = {
-    total: pelanggan.filter(p => p.latitude && p.longitude).length,
-    online: pelanggan.filter(p => p.latitude && p.longitude && p.status_online === 'Online').length,
-    offline: pelanggan.filter(p => p.latitude && p.longitude && p.status_online === 'Offline').length,
-    tanpaLokasi: pelanggan.filter(p => !p.latitude || !p.longitude).length,
+    total: pelanggan.filter(p => isValidLocation(p.latitude, p.longitude)).length,
+    online: pelanggan.filter(p => isValidLocation(p.latitude, p.longitude) && p.status_online === 'Online').length,
+    offline: pelanggan.filter(p => isValidLocation(p.latitude, p.longitude) && p.status_online === 'Offline').length,
+    tanpaLokasi: pelanggan.filter(p => !isValidLocation(p.latitude, p.longitude)).length,
   }
 
   return (
@@ -166,7 +172,7 @@ export default function Peta() {
             />
             <FitBounds pelanggan={filtered} />
             {filtered.map(p => (
-              <Marker key={p.id} position={[p.latitude, p.longitude]} icon={getIcon(p)}>
+              <Marker key={p.id} position={[parseFloat(p.latitude), parseFloat(p.longitude)]} icon={getIcon(p)}>
                 <Popup>
                   <div className="min-w-[180px]">
                     <p className="font-bold text-sm mb-1">{p.nama}</p>

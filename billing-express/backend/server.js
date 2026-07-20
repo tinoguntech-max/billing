@@ -43,18 +43,8 @@ const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {
   console.log(`✅ Backend running on http://localhost:${PORT}`)
   
-  // Initialize WhatsApp Gateway (disabled - no Chromium support)
-  // Uncomment below if running on VPS with Chromium
-  /*
-  try {
-    const { initializeWhatsApp } = require('./src/services/whatsapp-gateway')
-    initializeWhatsApp()
-  } catch (error) {
-    console.error('⚠️ WhatsApp Gateway failed to start:', error.message)
-    console.log('ℹ️ Server will continue without WhatsApp notifications')
-  }
-  */
-  console.log('ℹ️ WhatsApp Gateway disabled (no Chromium)')
+  // WhatsApp via Fonnte API
+  console.log('✅ WhatsApp notifications via Fonnte API')
   
   // Start connection monitoring service
   try {

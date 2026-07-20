@@ -9,6 +9,7 @@ export default function PengaturanPage() {
   const [toast, setToast] = useState<{msg:string,type:'success'|'error'}|null>(null)
   const [form, setForm] = useState({
     nama_isp: '', telepon: '', email: '', website: '', alamat: '', logo_url: null as string | null,
+    mikrotik_host: '', mikrotik_user: '', mikrotik_password: '', mikrotik_port: '8728'
   })
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -74,6 +75,10 @@ export default function PengaturanPage() {
     formData.append('email', form.email)
     formData.append('website', form.website)
     formData.append('alamat', form.alamat)
+    formData.append('mikrotik_host', form.mikrotik_host)
+    formData.append('mikrotik_user', form.mikrotik_user)
+    formData.append('mikrotik_password', form.mikrotik_password)
+    formData.append('mikrotik_port', form.mikrotik_port)
     if (logoFile) formData.append('logo_file', logoFile)
     const r = await fetch('/api/pengaturan', { method: 'POST', body: formData })
     const d = await r.json()
@@ -215,6 +220,38 @@ export default function PengaturanPage() {
               <div><span className="text-accent-purple">DATABASE</span>: <span className="text-accent-mint">billing_internet</span></div>
               <div><span className="text-accent-purple">STATUS</span>: <span className="text-accent-mint">● Connected</span></div>
             </div>
+          </div>
+
+          {/* MikroTik Config */}
+          <div className="card p-5">
+            <h3 className="font-bold text-dark mb-4">Konfigurasi MikroTik</h3>
+            <form onSubmit={handleSave} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Host / IP</label>
+                  <input type="text" className="input-field" placeholder="192.168.1.1"
+                    value={form.mikrotik_host || ''} onChange={(e) => setForm({...form, mikrotik_host: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Port API</label>
+                  <input type="text" className="input-field" placeholder="8728"
+                    value={form.mikrotik_port || ''} onChange={(e) => setForm({...form, mikrotik_port: e.target.value})} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Username</label>
+                  <input type="text" className="input-field" placeholder="admin"
+                    value={form.mikrotik_user || ''} onChange={(e) => setForm({...form, mikrotik_user: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Password</label>
+                  <input type="password" className="input-field" placeholder="***"
+                    value={form.mikrotik_password || ''} onChange={(e) => setForm({...form, mikrotik_password: e.target.value})} />
+                </div>
+              </div>
+              <button type="submit" className="btn-primary w-full justify-center mt-4">Simpan MikroTik</button>
+            </form>
           </div>
         </div>
 

@@ -20,8 +20,33 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
           <Bell size={16} className="text-accent-yellow" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-accent-pink rounded-full" />
         </button>
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold cursor-pointer"
-          style={{ background: 'linear-gradient(135deg,#9B6FD4,#4BA3E3)' }}>AD</div>
+        <div className="relative">
+          <div 
+            onClick={() => {
+              const el = document.getElementById('profile-dropdown');
+              if (el) el.classList.toggle('hidden');
+            }}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-white text-xs font-bold cursor-pointer"
+            style={{ background: 'linear-gradient(135deg,#9B6FD4,#4BA3E3)' }}>
+            AD
+          </div>
+          <div id="profile-dropdown" className="hidden absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-purple-50 overflow-hidden z-50">
+            <div className="px-4 py-3 border-b border-purple-50">
+              <p className="text-sm font-semibold text-dark">Admin</p>
+              <p className="text-xs text-muted">admin@netbill.id</p>
+            </div>
+            <div className="py-1">
+              <button 
+                onClick={() => {
+                  alert('Sesi telah diakhiri. (Halaman login akan segera ditambahkan)');
+                  window.location.href = '/';
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
   )

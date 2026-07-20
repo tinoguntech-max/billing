@@ -18,10 +18,20 @@ const navItems = [
 export default function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
   const pathname = usePathname()
   const [pengaturan, setPengaturan] = useState<any>(null)
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [refreshTrigger, setRefreshTrigger] = useState(Date.now())
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [logoLoaded, setLogoLoaded] = useState(false)
+  const [logoError, setLogoError] = useState(false)
 
   useEffect(() => {
-    fetch(`/api/pengaturan?t=${refreshTrigger}`).then(r => r.json()).then(setPengaturan)
+    setLogoLoaded(false)
+    setLogoError(false)
+    fetch(`/api/pengaturan?t=${refreshTrigger}`)
+      .then(r => r.json())
+      .then((data) => {
+        setPengaturan(data)
+        setLogoUrl(data?.logo_url || null)
+      })
   }, [refreshTrigger])
 
   useEffect(() => {
@@ -45,8 +55,23 @@ export default function Sidebar({ open, onClose }: { open: boolean; onClose: () 
         {/* Logo */}
         <div className="p-6 border-b border-purple-50 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {pengaturan?.logo_url ? (
-              <img src={pengaturan.logo_url} alt="Logo" className="h-9 w-9 object-contain" />
+            {logoUrl && !logoError ? (
+              <>
+                {!logoLoaded && (
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                    style={{ background: 'linear-gradient(135deg,#9B6FD4,#4BA3E3)' }}>
+                    <Wifi size={16} className="text-white" />
+                  </div>
+                )}
+                <img
+                  key={logoUrl}
+                  src={logoUrl}
+                  alt="Logo"
+                  className={`h-9 w-9 object-contain ${logoLoaded ? '' : 'hidden'}`}
+                  onLoad={() => { setLogoLoaded(true); setLogoError(false) }}
+                  onError={() => { setLogoLoaded(false); setLogoError(true) }}
+                />
+              </>
             ) : (
               <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                 style={{ background: 'linear-gradient(135deg,#9B6FD4,#4BA3E3)' }}>
