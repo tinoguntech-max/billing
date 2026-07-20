@@ -1,29 +1,33 @@
 @echo off
 echo ========================================
-echo   PUSH KE GITHUB
+echo   DEPLOY KE VPS billing.tamanet.site
 echo ========================================
 
-git add .
-git status
+set VPS_USER=root
+set VPS_HOST=103.253.212.26
+set VPS_PATH=/root/billing-internet
 
-set /p msg="Pesan commit (Enter untuk default): "
-if "%msg%"=="" set msg=Update aplikasi
+echo.
+echo [1/4] Upload file ke VPS via rsync/scp...
+echo        (menggunakan git push + pull di VPS)
 
-git commit -m "%msg%"
-git push origin main
+ssh %VPS_USER%@%VPS_HOST% "cd %VPS_PATH% && git pull origin main"
 
-if %errorlevel% equ 0 (
-  echo.
-  echo ✅ Berhasil push ke GitHub!
-  echo.
-  echo Sekarang jalankan di VPS:
-  echo   cd /path/to/project
-  echo   git pull origin main
-  echo   npm install
-  echo   npm run build
-  echo   pm2 restart all
-) else (
-  echo ❌ Gagal push. Cek error di atas.
-)
+echo.
+echo [2/4] Install dependencies backend...
+ssh %VPS_USER%@%VPS_HOST% "cd %VPS_PATH%/billing-express/backend && npm install --production"
 
+echo.
+echo [3/4] Build Next.js frontend...
+ssh %VPS_USER%@%VPS_HOST% "cd %VPS_PATH% && npm install && npm run build"
+
+echo.
+echo [4/4] Restart PM2...
+ssh %VPS_USER%@%VPS_HOST% "cd %VPS_PATH% && pm2 reload ecosystem.config.js --update-env && pm2 save"
+
+echo.
+echo ========================================
+echo   DEPLOY SELESAI!
+echo   Cek: https://billing.tamanet.site
+echo ========================================
 pause

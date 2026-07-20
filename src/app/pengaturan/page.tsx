@@ -2,7 +2,7 @@
 import Shell from '@/components/Shell'
 import { useState, useEffect, useCallback } from 'react'
 import Toast from '@/components/Toast'
-import { Upload, MessageCircle, CheckCircle, XCircle, RefreshCw, LogOut } from 'lucide-react'
+import { Upload, MessageCircle, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
 
 export default function PengaturanPage() {
   const [loading, setLoading] = useState(true)
@@ -15,10 +15,8 @@ export default function PengaturanPage() {
   const [logoFile, setLogoFile] = useState<File | null>(null)
 
   // WA Gateway state
-  const [waStatus, setWaStatus]     = useState<{ready:boolean, hasQR:boolean, error?:string} | null>(null)
-  const [waLoading, setWaLoading]   = useState(false)
-  const [waPolling, setWaPolling]   = useState(false)
-  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5000'
+  const [waStatus, setWaStatus]   = useState<{ready:boolean, error?:string} | null>(null)
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001'
 
   useEffect(() => {
     fetch('/api/pengaturan').then(r => r.json()).then(data => {
@@ -36,26 +34,6 @@ export default function PengaturanPage() {
   }, [])
 
   useEffect(() => { fetchWaStatus() }, [fetchWaStatus])
-
-  // Poll status saat menunggu scan QR
-  useEffect(() => {
-    if (!waPolling) return
-    const interval = setInterval(async () => {
-      const d = await fetchWaStatus()
-      if (d.ready) { setWaPolling(false); setToast({ msg: 'WhatsApp berhasil terhubung!', type: 'success' }) }
-    }, 3000)
-    return () => clearInterval(interval)
-  }, [waPolling, fetchWaStatus])
-
-  const handleLogout = async () => {
-    if (!confirm('Logout dari WhatsApp? Kamu perlu scan QR ulang.')) return
-    setWaLoading(true)
-    const r = await fetch('/api/whatsapp/logout', { method: 'POST' })
-    const d = await r.json()
-    setToast({ msg: d.success ? 'Berhasil logout WhatsApp' : (d.error || 'Gagal logout'), type: d.success ? 'success' : 'error' })
-    await fetchWaStatus()
-    setWaLoading(false)
-  }
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -158,10 +136,10 @@ export default function PengaturanPage() {
               }
               <div>
                 <div className={`font-semibold text-sm ${waStatus?.ready ? 'text-green-700' : 'text-red-600'}`}>
-                  {waStatus?.ready ? 'Terhubung' : waStatus?.error ? 'Backend tidak aktif' : 'Tidak Terhubung'}
+                  {waStatus?.ready ? 'Fonnte API Aktif' : waStatus?.error ? 'Backend tidak aktif' : 'Token belum dikonfigurasi'}
                 </div>
                 <div className="text-xs text-muted mt-0.5">
-                  {waStatus?.ready ? 'WhatsApp siap mengirim notifikasi' : waStatus?.hasQR ? 'Menunggu scan QR code' : 'Perlu login WhatsApp'}
+                  {waStatus?.ready ? 'WhatsApp siap mengirim notifikasi via Fonnte' : 'Pastikan FONNTE_TOKEN sudah diset di .env backend'}
                 </div>
               </div>
               <button onClick={fetchWaStatus} className="ml-auto w-7 h-7 rounded-lg bg-white flex items-center justify-center text-muted hover:bg-gray-100 transition-colors">
@@ -169,45 +147,10 @@ export default function PengaturanPage() {
               </button>
             </div>
 
-            {/* QR Code */}
-            {!waStatus?.ready && !waStatus?.error && (
-              <div className="mb-4">
-                <div className="text-xs text-muted mb-2">Scan QR code berikut dengan WhatsApp di HP kamu:</div>
-                <div className="border border-purple-100 rounded-xl overflow-hidden">
-                  <iframe
-                    src={`${backendUrl}/api/whatsapp/qr`}
-                    className="w-full h-80 border-0"
-                    title="WhatsApp QR Code"
-                    onLoad={() => { if (!waStatus?.ready) setWaPolling(true) }}
-                  />
-                </div>
-                {waPolling && (
-                  <div className="flex items-center gap-2 mt-2 text-xs text-muted">
-                    <RefreshCw size={11} className="animate-spin"/> Menunggu scan QR...
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex gap-2">
-              {waStatus?.ready && (
-                <button onClick={handleLogout} disabled={waLoading}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl border border-red-100 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors disabled:opacity-50">
-                  <LogOut size={13}/> Ganti Nomor WA
-                </button>
-              )}
-              {!waStatus?.ready && !waStatus?.error && (
-                <a href={`${backendUrl}/api/whatsapp/qr`} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-500 text-white text-xs font-semibold hover:bg-green-600 transition-colors">
-                  <MessageCircle size={13}/> Buka QR di Tab Baru
-                </a>
-              )}
-            </div>
-
             <div className="mt-4 pt-4 border-t border-purple-50 text-xs text-muted space-y-1">
+              <div>Provider: <span className="font-mono text-accent-purple">Fonnte API</span></div>
               <div>Backend URL: <span className="font-mono text-accent-purple">{backendUrl}</span></div>
-              <div>Untuk ganti nomor WA, klik "Ganti Nomor WA" lalu scan QR dengan nomor baru.</div>
+              <div>Tidak perlu scan QR — cukup pastikan token Fonnte sudah diset di file <code>.env</code> backend.</div>
             </div>
           </div>
 
