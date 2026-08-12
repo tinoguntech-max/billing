@@ -2,7 +2,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Users, FileText, Package, CreditCard, BarChart2, Settings, Wifi, X, TrendingDown } from 'lucide-react'
+import { LayoutDashboard, Users, FileText, Package, CreditCard, BarChart2, Settings, Wifi, X, TrendingDown, Radio } from 'lucide-react'
 
 const navItems = [
   { href: '/',            label: 'Dashboard',        icon: LayoutDashboard, group: 'main' },
@@ -11,6 +11,7 @@ const navItems = [
   { href: '/paket',       label: 'Paket Internet',   icon: Package,         group: 'main' },
   { href: '/pembayaran',  label: 'Pembayaran',       icon: CreditCard,      group: 'main' },
   { href: '/pengeluaran', label: 'Pengeluaran',      icon: TrendingDown,    group: 'main' },
+  { href: '/monitoring',  label: 'Monitoring ONT',   icon: Radio,           group: 'main' },
   { href: '/laporan',     label: 'Laporan Keuangan', icon: BarChart2,       group: 'report' },
   { href: '/pengaturan',  label: 'Pengaturan',       icon: Settings,        group: 'report' },
 ]

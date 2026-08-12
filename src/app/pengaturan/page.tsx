@@ -2,15 +2,18 @@
 import Shell from '@/components/Shell'
 import { useState, useEffect, useCallback } from 'react'
 import Toast from '@/components/Toast'
-import { Upload, MessageCircle, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
+import { Upload, MessageCircle, CheckCircle, XCircle, RefreshCw, Radio } from 'lucide-react'
 
 export default function PengaturanPage() {
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState<{msg:string,type:'success'|'error'}|null>(null)
   const [form, setForm] = useState({
     nama_isp: '', telepon: '', email: '', website: '', alamat: '', logo_url: null as string | null,
-    mikrotik_host: '', mikrotik_user: '', mikrotik_password: '', mikrotik_port: '8728'
+    mikrotik_host: '', mikrotik_user: '', mikrotik_password: '', mikrotik_port: '8728',
+    olt_host: '', olt_port: '8181', olt_user: '', olt_password: ''
   })
+  const [oltStatus, setOltStatus] = useState<{connected:boolean, message:string} | null>(null)
+  const [oltChecking, setOltChecking] = useState(false)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
 
@@ -20,7 +23,22 @@ export default function PengaturanPage() {
 
   useEffect(() => {
     fetch('/api/pengaturan').then(r => r.json()).then(data => {
-      setForm(data)
+      setForm({
+        nama_isp:           data.nama_isp || '',
+        telepon:            data.telepon || '',
+        email:              data.email || '',
+        website:            data.website || '',
+        alamat:             data.alamat || '',
+        logo_url:           data.logo_url || null,
+        mikrotik_host:      data.mikrotik_host || '',
+        mikrotik_user:      data.mikrotik_user || '',
+        mikrotik_password:  data.mikrotik_password || '',
+        mikrotik_port:      data.mikrotik_port || '8728',
+        olt_host:           data.olt_host || '',
+        olt_port:           data.olt_port || '8181',
+        olt_user:           data.olt_user || '',
+        olt_password:       data.olt_password || '',
+      })
       if (data.logo_url) setLogoPreview(data.logo_url)
       setLoading(false)
     })
@@ -31,6 +49,17 @@ export default function PengaturanPage() {
     const d = await r.json()
     setWaStatus(d)
     return d
+  }, [])
+
+  const checkOltStatus = useCallback(async () => {
+    setOltChecking(true)
+    try {
+      const r = await fetch('/api/olt/status')
+      const d = await r.json()
+      setOltStatus(d)
+    } finally {
+      setOltChecking(false)
+    }
   }, [])
 
   useEffect(() => { fetchWaStatus() }, [fetchWaStatus])
@@ -57,6 +86,10 @@ export default function PengaturanPage() {
     formData.append('mikrotik_user', form.mikrotik_user)
     formData.append('mikrotik_password', form.mikrotik_password)
     formData.append('mikrotik_port', form.mikrotik_port)
+    formData.append('olt_host', form.olt_host)
+    formData.append('olt_port', form.olt_port)
+    formData.append('olt_user', form.olt_user)
+    formData.append('olt_password', form.olt_password)
     if (logoFile) formData.append('logo_file', logoFile)
     const r = await fetch('/api/pengaturan', { method: 'POST', body: formData })
     const d = await r.json()
@@ -194,6 +227,65 @@ export default function PengaturanPage() {
                 </div>
               </div>
               <button type="submit" className="btn-primary w-full justify-center mt-4">Simpan MikroTik</button>
+            </form>
+          </div>
+
+          {/* OLT Config */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Radio size={18} className="text-accent-purple" />
+                <h3 className="font-bold text-dark">Konfigurasi OLT (C-Data)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={checkOltStatus}
+                disabled={oltChecking || !form.olt_host}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-pastel-lavender text-accent-purple hover:bg-purple-100 transition-colors disabled:opacity-40"
+              >
+                <RefreshCw size={12} className={oltChecking ? 'animate-spin' : ''} />
+                {oltChecking ? 'Mengecek...' : 'Cek Koneksi'}
+              </button>
+            </div>
+
+            {oltStatus && (
+              <div className={`rounded-xl p-3 mb-4 flex items-center gap-2 text-sm ${oltStatus.connected ? 'bg-green-50 border border-green-100' : 'bg-red-50 border border-red-100'}`}>
+                {oltStatus.connected
+                  ? <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
+                  : <XCircle size={16} className="text-red-400 flex-shrink-0" />
+                }
+                <span className={oltStatus.connected ? 'text-green-700' : 'text-red-600'}>
+                  {oltStatus.message}
+                </span>
+              </div>
+            )}
+
+            <form onSubmit={handleSave} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Host / IP OLT</label>
+                  <input type="text" className="input-field" placeholder="192.168.1.254"
+                    value={form.olt_host} onChange={(e) => setForm({...form, olt_host: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Port Web API</label>
+                  <input type="text" className="input-field" placeholder="8181"
+                    value={form.olt_port} onChange={(e) => setForm({...form, olt_port: e.target.value})} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Username</label>
+                  <input type="text" className="input-field" placeholder="admin"
+                    value={form.olt_user} onChange={(e) => setForm({...form, olt_user: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-xs text-muted font-semibold uppercase tracking-wider block mb-1">Password</label>
+                  <input type="password" className="input-field" placeholder="***"
+                    value={form.olt_password} onChange={(e) => setForm({...form, olt_password: e.target.value})} />
+                </div>
+              </div>
+              <button type="submit" className="btn-primary w-full justify-center mt-4">Simpan OLT</button>
             </form>
           </div>
         </div>

@@ -27,12 +27,20 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData()
-    const nama_isp = formData.get('nama_isp') as string
-    const telepon = formData.get('telepon') as string
-    const email = formData.get('email') as string
-    const website = formData.get('website') as string
-    const alamat = formData.get('alamat') as string
-    const logo_file = formData.get('logo_file') as File | null
+    const nama_isp          = formData.get('nama_isp') as string
+    const telepon           = formData.get('telepon') as string
+    const email             = formData.get('email') as string
+    const website           = formData.get('website') as string
+    const alamat            = formData.get('alamat') as string
+    const mikrotik_host     = formData.get('mikrotik_host') as string
+    const mikrotik_user     = formData.get('mikrotik_user') as string
+    const mikrotik_password = formData.get('mikrotik_password') as string
+    const mikrotik_port     = formData.get('mikrotik_port') as string
+    const olt_host          = formData.get('olt_host') as string
+    const olt_port          = formData.get('olt_port') as string
+    const olt_user          = formData.get('olt_user') as string
+    const olt_password      = formData.get('olt_password') as string
+    const logo_file         = formData.get('logo_file') as File | null
 
     let logo_url = null
     if (logo_file) {
@@ -40,15 +48,10 @@ export async function POST(req: NextRequest) {
       const buffer = Buffer.from(bytes)
       const fileName = `logo-${Date.now()}.${logo_file.type.split('/')[1]}`
 
-      // Save to public folder
       const fs = require('fs').promises
-      const path = require('path').join(process.cwd(), 'public', 'uploads', fileName)
-
-      // Create uploads folder if not exists
       const uploadDir = require('path').join(process.cwd(), 'public', 'uploads')
       await fs.mkdir(uploadDir, { recursive: true })
-
-      await fs.writeFile(path, buffer)
+      await fs.writeFile(require('path').join(uploadDir, fileName), buffer)
       logo_url = `/uploads/${fileName}`
     }
 
@@ -56,21 +59,35 @@ export async function POST(req: NextRequest) {
     const [existing]: any = await pool.query("SELECT id FROM pengaturan LIMIT 1")
 
     if (existing.length > 0) {
-      // Update
-      const updateQuery = logo_url
-        ? `UPDATE pengaturan SET nama_isp=?, telepon=?, email=?, website=?, alamat=?, logo_url=? WHERE id=?`
-        : `UPDATE pengaturan SET nama_isp=?, telepon=?, email=?, website=?, alamat=? WHERE id=?`
-
-      const params = logo_url
-        ? [nama_isp, telepon, email, website, alamat, logo_url, existing[0].id]
-        : [nama_isp, telepon, email, website, alamat, existing[0].id]
-
-      await pool.query(updateQuery, params)
+      const id = existing[0].id
+      if (logo_url) {
+        await pool.query(
+          `UPDATE pengaturan SET nama_isp=?, telepon=?, email=?, website=?, alamat=?, logo_url=?,
+           mikrotik_host=?, mikrotik_user=?, mikrotik_password=?, mikrotik_port=?,
+           olt_host=?, olt_port=?, olt_user=?, olt_password=? WHERE id=?`,
+          [nama_isp, telepon, email, website, alamat, logo_url,
+           mikrotik_host, mikrotik_user, mikrotik_password, mikrotik_port,
+           olt_host, olt_port, olt_user, olt_password, id]
+        )
+      } else {
+        await pool.query(
+          `UPDATE pengaturan SET nama_isp=?, telepon=?, email=?, website=?, alamat=?,
+           mikrotik_host=?, mikrotik_user=?, mikrotik_password=?, mikrotik_port=?,
+           olt_host=?, olt_port=?, olt_user=?, olt_password=? WHERE id=?`,
+          [nama_isp, telepon, email, website, alamat,
+           mikrotik_host, mikrotik_user, mikrotik_password, mikrotik_port,
+           olt_host, olt_port, olt_user, olt_password, id]
+        )
+      }
     } else {
-      // Insert
       await pool.query(
-        `INSERT INTO pengaturan (nama_isp, telepon, email, website, alamat, logo_url) VALUES (?,?,?,?,?,?)`,
-        [nama_isp, telepon, email, website, alamat, logo_url]
+        `INSERT INTO pengaturan (nama_isp, telepon, email, website, alamat, logo_url,
+         mikrotik_host, mikrotik_user, mikrotik_password, mikrotik_port,
+         olt_host, olt_port, olt_user, olt_password)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [nama_isp, telepon, email, website, alamat, logo_url,
+         mikrotik_host, mikrotik_user, mikrotik_password, mikrotik_port,
+         olt_host, olt_port, olt_user, olt_password]
       )
     }
 

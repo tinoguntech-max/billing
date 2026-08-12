@@ -89,7 +89,11 @@ async function init() {
       ADD COLUMN IF NOT EXISTS mikrotik_port VARCHAR(10) DEFAULT '8728',
       ADD COLUMN IF NOT EXISTS wa_api_url VARCHAR(255),
       ADD COLUMN IF NOT EXISTS wa_api_token VARCHAR(255),
-      ADD COLUMN IF NOT EXISTS wa_notif_enabled TINYINT(1) DEFAULT 0;
+      ADD COLUMN IF NOT EXISTS wa_notif_enabled TINYINT(1) DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS olt_host VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS olt_port VARCHAR(10) DEFAULT '9100',
+      ADD COLUMN IF NOT EXISTS olt_user VARCHAR(100),
+      ADD COLUMN IF NOT EXISTS olt_password VARCHAR(255);
 
     CREATE TABLE IF NOT EXISTS pengeluaran (
       id              INT AUTO_INCREMENT PRIMARY KEY,
